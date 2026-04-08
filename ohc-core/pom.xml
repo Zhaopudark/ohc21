@@ -3,17 +3,17 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.caffinitas.ohc</groupId>
+        <groupId>io.github.zhaopudark.ohc</groupId>
         <artifactId>ohc-parent</artifactId>
-        <version>0.7.4</version>
+        <version>0.9.0</version>
         <relativePath>..</relativePath>
     </parent>
 
     <artifactId>ohc-core</artifactId>
-    <version>0.7.4</version>
+    <version>0.9.0</version>
 
     <name>OHC core</name>
-    <description>Off-Heap concurrent hash map intended to store GBs of serialized data</description>
+    <description>Off-Heap concurrent hash map intended to store GBs of serialized data (forked for Java 21)</description>
     <organization>
         <name>Robert Stupp, Koeln, Germany, robert-stupp.de</name>
         <url>http://caffinitas.org/</url>
@@ -142,7 +142,6 @@
         </dependency>
 
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
