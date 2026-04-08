@@ -2,24 +2,24 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.caffinitas.ohc</groupId>
+    <groupId>io.github.zhaopudark.ohc</groupId>
     <artifactId>ohc-parent</artifactId>
-    <version>0.7.4</version>
+    <version>0.9.0</version>
     <packaging>pom</packaging>
 
     <name>OHC parent</name>
-    <description>Off-Heap concurrent hash map intended to store GBs of serialized data</description>
+    <description>Off-Heap concurrent hash map intended to store GBs of serialized data (forked for Java 21)</description>
     <organization>
-        <name>Robert Stupp, Koeln, Germany, robert-stupp.de</name>
-        <url>http://caffinitas.org/</url>
+        <name>Pu Zhao</name>
+        <url>https://github.com/Zhaopudark/ohc21</url>
     </organization>
-    <url>http://caffinitas.org/</url>
+    <url>https://github.com/Zhaopudark/ohc21</url>
 
     <inceptionYear>2014</inceptionYear>
     <developers>
         <developer>
-            <name>Robert Stupp</name>
-            <email>robert@caffinitas.org</email>
+            <name>Pu Zhao</name>
+            <email>zhaopudark@outlook.com</email>
         </developer>
     </developers>
     <contributors>
@@ -53,19 +53,19 @@
         </repository>
     </distributionManagement>
     <scm>
-        <connection>scm:git:https://github.com/snazy/ohc.git</connection>
-        <developerConnection>scm:git:https://github.com/snazy/ohc.git</developerConnection>
-        <url>https://github.com/snazy/ohc</url>
+        <connection>scm:git:https://github.com/Zhaopudark/ohc21.git</connection>
+        <developerConnection>scm:git:https://github.com/Zhaopudark/ohc21.git</developerConnection>
+        <url>https://github.com/Zhaopudark/ohc21</url>
     </scm>
     <issueManagement>
         <system>Github</system>
-        <url>https://github.com/snazy/ohc/issues</url>
+        <url>https://github.com/Zhaopudark/ohc21/issues</url>
     </issueManagement>
 
     <modules>
         <module>ohc-core</module>
-        <module>ohc-benchmark</module>
-        <module>ohc-jmh</module>
+<!--        <module>ohc-benchmark</module>-->
+<!--        <module>ohc-jmh</module>-->
     </modules>
 
     <properties>
@@ -92,6 +92,7 @@
         <version.org.apache.logging.log4j>2.16.0</version.org.apache.logging.log4j>
         <version.org.codehaus.mojo.cobertura-maven-plugin>2.7</version.org.codehaus.mojo.cobertura-maven-plugin>
         <version.org.codehaus.mojo.exec-maven-plugin>3.0.0</version.org.codehaus.mojo.exec-maven-plugin>
+        <version.org.sonatype.central.central-publishing-maven-plugin>0.10.0</version.org.sonatype.central.central-publishing-maven-plugin>
         <version.org.slf4j>1.7.32</version.org.slf4j>
         <version.org.testng>7.4.0</version.org.testng>
         <version.org.hamcrest>2.2</version.org.hamcrest>
@@ -252,6 +253,65 @@
                     <version>${version.org.apache.maven.plugins.maven-surefire-plugin}</version>
                 </plugin>
 
+<!--                <plugin>-->
+<!--                    <groupId>org.apache.maven.plugins</groupId>-->
+<!--                    <artifactId>maven-source-plugin</artifactId>-->
+<!--                    <version>2.2.1</version>-->
+<!--                    <executions>-->
+<!--                        <execution>-->
+<!--                            <id>attach-sources</id>-->
+<!--                            <goals>-->
+<!--                                <goal>jar-no-fork</goal>-->
+<!--                            </goals>-->
+<!--                        </execution>-->
+<!--                    </executions>-->
+<!--                </plugin>-->
+<!--                &lt;!&ndash;   javadoc插件 &ndash;&gt;-->
+<!--                <plugin>-->
+<!--                    <groupId>org.apache.maven.plugins</groupId>-->
+<!--                    <artifactId>maven-javadoc-plugin</artifactId>-->
+<!--                    <version>3.1.1</version>-->
+<!--                    <configuration>-->
+<!--                        <charset>UTF-8</charset>-->
+<!--                        <encoding>UTF-8</encoding>-->
+<!--                        <docencoding>UTF-8</docencoding>-->
+<!--                        <additionalJOption>-Xdoclint:none</additionalJOption>-->
+<!--                    </configuration>-->
+<!--                    <executions>-->
+<!--                        <execution>-->
+<!--                            <id>attach-javadocs</id>-->
+<!--                            <goals>-->
+<!--                                <goal>jar</goal>-->
+<!--                            </goals>-->
+<!--                        </execution>-->
+<!--                    </executions>-->
+<!--                </plugin>-->
+
+<!--                <plugin>-->
+<!--                    <groupId>org.apache.maven.plugins</groupId>-->
+<!--                    <artifactId>maven-gpg-plugin</artifactId>-->
+<!--                    <version>3.2.5</version>-->
+<!--                    <executions>-->
+<!--                        <execution>-->
+<!--                            <id>sign-artifacts</id>-->
+<!--                            <phase>verify</phase>-->
+<!--                            <goals>-->
+<!--                                <goal>sign</goal>-->
+<!--                            </goals>-->
+<!--                        </execution>-->
+<!--                    </executions>-->
+<!--                </plugin>-->
+
+<!--                <plugin>-->
+<!--                    <groupId>org.sonatype.central</groupId>-->
+<!--                    <artifactId>central-publishing-maven-plugin</artifactId>-->
+<!--                    <version>0.9.0</version>-->
+<!--                    <extensions>true</extensions>-->
+<!--                    <configuration>-->
+<!--                        <publishingServerId>central</publishingServerId>-->
+<!--                    </configuration>-->
+<!--                </plugin>-->
+
             </plugins>
         </pluginManagement>
     </build>
@@ -344,16 +404,6 @@
 
     <profiles>
         <profile>
-            <id>java11</id>
-            <activation>
-                <jdk>[11,)</jdk>
-            </activation>
-            <properties>
-                <surefire.jvmargs>--add-exports java.base/sun.nio.ch=ALL-UNNAMED</surefire.jvmargs>
-            </properties>
-        </profile>
-
-        <profile>
             <id>javadoc</id>
             <build>
                 <plugins>
@@ -375,6 +425,17 @@
                     </plugin>
 
                     <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${version.org.sonatype.central.central-publishing-maven-plugin}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>false</autoPublish>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
                         <groupId>external.atlassian.jgitflow</groupId>
                         <artifactId>jgitflow-maven-plugin</artifactId>
                         <version>${version.external.atlassian.jgitflow.jgitflow-maven-plugin}</version>
@@ -392,6 +453,9 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
                         <version>${version.org.apache.maven.plugins.maven-gpg-plugin}</version>
+                        <configuration>
+                            <keyname>0802D482D22790A1651BA231ADB95FF70953D71D</keyname>
+                        </configuration>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -407,9 +471,9 @@
         </profile>
 
         <!--
-        Release deployment procecure:
+        Release deployment procedure:
 
-            . ~/devel/java11-openjdk.sh
+            Configure ~/.m2/settings.xml with a Central Portal token under server id "central".
             mvn clean
             mvn jgitflow:release-start -Pdeploy
             mvn jgitflow:release-finish -Pdeploy
@@ -417,12 +481,12 @@
 
             ALTERNATIVE:
 
-            . ~/devel/java11-openjdk.sh
+            Configure ~/.m2/settings.xml with a Central Portal token under server id "central".
             mvn clean
             mvn jgitflow:release-start -Pdeploy
             mvn jgitflow:release-finish -Pdeploy -DkeepBranch=true -DnoDeploy=true
             (...)
-            mvn deploy
+            mvn deploy -Pdeploy
             (git push required unless -DpushReleases=true on release-finish)
 
         -->
