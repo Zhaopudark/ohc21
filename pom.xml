@@ -15,7 +15,7 @@
     </organization>
     <url>https://github.com/Zhaopudark/ohc21</url>
 
-    <inceptionYear>2014</inceptionYear>
+    <inceptionYear>2026</inceptionYear>
     <developers>
         <developer>
             <name>Pu Zhao</name>
@@ -23,6 +23,10 @@
         </developer>
     </developers>
     <contributors>
+        <contributor>
+            <name>Robert Stupp</name>
+            <email>robert@caffinitas.org</email>
+        </contributor>
         <contributor>
             <name>Benedict Elliott Smith</name>
             <email>belliottsmith@datastax.com</email>
