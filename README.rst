@@ -1,6 +1,8 @@
 OHC - An off-heap-cache
 =======================
 
+Inheriting from https://github.com/snazy/ohc, and will continue to evolve for Java 21.
+
 Features
 ========
 
