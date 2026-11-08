@@ -16,8 +16,8 @@
 package org.caffinitas.ohc.linked;
 
 import java.io.IOException;
+import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Field;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
@@ -32,8 +32,6 @@ import org.caffinitas.ohc.alloc.JNANativeAllocator;
 import org.caffinitas.ohc.alloc.UnsafeAllocator;
 
 import sun.misc.Unsafe;
-
-import static org.caffinitas.ohc.util.ByteBufferCompat.byteBufferPosition;
 
 final class Uns
 {
@@ -357,61 +355,30 @@ final class Uns
         allocator.free(address);
     }
 
-    private static final Class<?> DIRECT_BYTE_BUFFER_CLASS;
-    private static final Class<?> DIRECT_BYTE_BUFFER_CLASS_R;
-    private static final long DIRECT_BYTE_BUFFER_ADDRESS_OFFSET;
-    private static final long DIRECT_BYTE_BUFFER_CAPACITY_OFFSET;
-    private static final long DIRECT_BYTE_BUFFER_LIMIT_OFFSET;
-
-    static
-    {
-        try
-        {
-            ByteBuffer directBuffer = ByteBuffer.allocateDirect(0);
-            ByteBuffer directReadOnly = directBuffer.asReadOnlyBuffer();
-            Class<?> clazz = directBuffer.getClass();
-            Class<?> clazzReadOnly = directReadOnly.getClass();
-            DIRECT_BYTE_BUFFER_ADDRESS_OFFSET = unsafe.objectFieldOffset(Buffer.class.getDeclaredField("address"));
-            DIRECT_BYTE_BUFFER_CAPACITY_OFFSET = unsafe.objectFieldOffset(Buffer.class.getDeclaredField("capacity"));
-            DIRECT_BYTE_BUFFER_LIMIT_OFFSET = unsafe.objectFieldOffset(Buffer.class.getDeclaredField("limit"));
-            DIRECT_BYTE_BUFFER_CLASS = clazz;
-            DIRECT_BYTE_BUFFER_CLASS_R = clazzReadOnly;
-        }
-        catch (NoSuchFieldException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
     static ByteBuffer directBufferFor(long address, long offset, long len, boolean readOnly)
     {
         if (len > Integer.MAX_VALUE || len < 0L)
             throw new IllegalArgumentException();
-        try
-        {
-            ByteBuffer bb = (ByteBuffer) unsafe.allocateInstance(readOnly ? DIRECT_BYTE_BUFFER_CLASS_R : DIRECT_BYTE_BUFFER_CLASS);
-            unsafe.putLong(bb, DIRECT_BYTE_BUFFER_ADDRESS_OFFSET, address + offset);
-            unsafe.putInt(bb, DIRECT_BYTE_BUFFER_CAPACITY_OFFSET, (int) len);
-            unsafe.putInt(bb, DIRECT_BYTE_BUFFER_LIMIT_OFFSET, (int) len);
-            bb.order(ByteOrder.BIG_ENDIAN);
-            return bb;
-        }
-        catch (Error e)
-        {
-            throw e;
-        }
-        catch (Throwable t)
-        {
-            throw new RuntimeException(t);
-        }
+        // FFM-backed zero-copy view over the off-heap entry region. The segment is unbounded
+        // (MemorySegment.ofAddress) reinterpreted to the requested length, giving GLOBAL scope
+        // whose lifetime is managed explicitly by the allocator - semantically equivalent to the
+        // previous fabricated DirectByteBuffer, but without sun.misc.Unsafe.allocateInstance.
+        ByteBuffer bb = MemorySegment.ofAddress(address + offset)
+                                     .reinterpret(len)
+                                     .asByteBuffer();
+        if (readOnly)
+            bb = bb.asReadOnlyBuffer();
+        bb.order(ByteOrder.BIG_ENDIAN);
+        return bb;
     }
 
     static void invalidateDirectBuffer(ByteBuffer buffer)
     {
-        byteBufferPosition(buffer, 0);
-        unsafe.putInt(buffer, DIRECT_BYTE_BUFFER_CAPACITY_OFFSET, 0);
-        unsafe.putInt(buffer, DIRECT_BYTE_BUFFER_LIMIT_OFFSET, 0);
-        unsafe.putLong(buffer, DIRECT_BYTE_BUFFER_ADDRESS_OFFSET, 0L);
+        // Make the view inert after the backing entry is dereferenced: shrinking limit to 0
+        // clamps position to 0 too, so any later get()/put() throws Buffer(Under|Over)flowException
+        // instead of touching freed memory. Uses only public ByteBuffer API (no Unsafe field poke).
+        buffer.position(0);
+        buffer.limit(0);
     }
 
     static ByteBuffer keyBufferR(long hashEntryAdr)

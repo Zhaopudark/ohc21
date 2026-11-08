@@ -36,7 +36,6 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import static org.caffinitas.ohc.util.ByteBufferCompat.byteBufferFlip;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -526,7 +525,7 @@ public class ChunkedCacheImplTest
                 {
                     ByteBuffer bb = ByteBuffer.allocate(serSize);
                     bb.put(iter.next());
-                    byteBufferFlip(bb);
+                    bb.flip();
                     got.add(bb);
                     iter.remove();
                     cnt ++;
@@ -538,7 +537,7 @@ public class ChunkedCacheImplTest
             {
                 ByteBuffer bb = ByteBuffer.allocate(serSize);
                 TestUtils.intSerializer.serialize(i, bb);
-                byteBufferFlip(bb);
+                bb.flip();
                 Assert.assertTrue(got.indexOf(bb) != -1);
             }
 

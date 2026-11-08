@@ -206,7 +206,10 @@ public class TimeoutsTest
     @Test
     public void testGetWithLoader() throws Exception
     {
-        // NOTE: cannot use TestTicker instance here, because the test relies on the behaviour of java.util.concurrent.Future
+        // NOTE: cannot use TestTicker instance here, because the test relies on the behaviour of
+        // java.util.concurrent.Future and on real-time expiry. Timing margins are kept generous so
+        // that thread-scheduling jitter cannot make the loader's completion cross the expireAt
+        // boundary (which is what made this test flaky when the windows were ~50-100ms).
 
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
         try (OHCache<Integer, String> cache = OHCacheBuilder.<Integer, String>newBuilder()
@@ -216,18 +219,20 @@ public class TimeoutsTest
                                               .timeouts(true)
                                               .build())
         {
-            // expires before loader starts
+            long now = System.currentTimeMillis();
+
+            // expires before loader starts: expireAt already in the past -> load result is discarded as expired
             Future<String> f = cache.getWithLoaderAsync(1, new CacheLoader<Integer, String>()
             {
                 public String load(Integer key) throws Exception
                 {
                     return "one";
                 }
-            }, System.currentTimeMillis() - 1);
-            assertNull(f.get());
+            }, now - 1);
+            assertNull(f.get(5, TimeUnit.SECONDS));
             assertNull(cache.get(1));
 
-            // expires after loader finishes
+            // expires after loader finishes: generous window so the 50ms load completes well before expireAt
             f = cache.getWithLoaderAsync(2, new CacheLoader<Integer, String>()
             {
                 public String load(Integer key) throws Exception
@@ -235,23 +240,24 @@ public class TimeoutsTest
                     Thread.sleep(50);
                     return "two";
                 }
-            }, System.currentTimeMillis() + 100);
-            Thread.sleep(60);
-            assertEquals(f.get(0, TimeUnit.MILLISECONDS), "two");
+            }, now + 2000);
+            // deterministically wait for the loader to finish; value must be present and not yet expired
+            assertEquals(f.get(5, TimeUnit.SECONDS), "two");
             assertEquals(cache.get(2), "two");
-            Thread.sleep(60);
+            // wait past expireAt, then the entry must be gone
+            Thread.sleep(2150);
             assertNull(cache.get(2));
 
-            // expires before loader finishes
+            // expires before loader finishes: 200ms load vs +5ms expireAt -> loader always finishes after expiry
             f = cache.getWithLoaderAsync(3, new CacheLoader<Integer, String>()
             {
                 public String load(Integer key) throws Exception
                 {
-                    Thread.sleep(5);
+                    Thread.sleep(200);
                     return "three";
                 }
-            }, System.currentTimeMillis() + 2);
-            assertNull(f.get());
+            }, now + 5);
+            assertNull(f.get(5, TimeUnit.SECONDS));
             assertNull(cache.get(3));
         }
         finally

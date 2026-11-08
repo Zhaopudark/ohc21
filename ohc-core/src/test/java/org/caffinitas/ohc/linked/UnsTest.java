@@ -26,8 +26,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Random;
 
-import static org.caffinitas.ohc.util.ByteBufferCompat.byteBufferClear;
-import static org.caffinitas.ohc.util.ByteBufferCompat.byteBufferFlip;
 import static org.testng.Assert.*;
 
 public class UnsTest
@@ -64,10 +62,10 @@ public class UnsTest
     private static void fillRandom()
     {
         Random r = new Random();
-        byteBufferClear(directBuffer);
+        directBuffer.clear();
         while (directBuffer.remaining() >= 4)
             directBuffer.putInt(r.nextInt());
-        byteBufferClear(directBuffer);
+        directBuffer.clear();
     }
 
     @Test
@@ -89,8 +87,8 @@ public class UnsTest
             assertEquals(buf.capacity(), directBuffer.capacity());
         }
 
-        byteBufferClear(buf);
-        byteBufferClear(directBuffer);
+        buf.clear();
+        directBuffer.clear();
 
         while (buf.remaining() >= 8)
         {
@@ -273,9 +271,9 @@ public class UnsTest
             for (int i = 0; i < 14; i++)
             {
                 long u = Uns.getLongFromByteArray(arr, i);
-                byteBufferClear(directBuffer);
+                directBuffer.clear();
                 directBuffer.put(arr);
-                byteBufferFlip(directBuffer);
+                directBuffer.flip();
                 long b = directBuffer.getLong(i);
                 assertEquals(b, u);
             }

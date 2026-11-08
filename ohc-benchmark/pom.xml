@@ -70,9 +70,9 @@
     <dependencies>
 
         <dependency>
-            <groupId>org.caffinitas.ohc</groupId>
+            <groupId>io.github.zhaopudark.ohc21</groupId>
             <artifactId>ohc-core</artifactId>
-            <version>0.7.4</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -101,7 +101,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
             <scope>compile</scope>
         </dependency>
 

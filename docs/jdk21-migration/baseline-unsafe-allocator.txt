@@ -1,0 +1,247 @@
+# JMH version: 1.37
+# VM version: JDK 21, OpenJDK 64-Bit Server VM, 21+35-2513
+# VM invoker: D:\Tools\jdk\jdk-21\bin\java.exe
+# VM options: --add-exports=java.base/sun.nio.ch=ALL-UNNAMED -Xmx512M
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 1 s each
+# Measurement: 3 iterations, 2 s each
+# Timeout: 10 min per iteration
+# Threads: 4 threads, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateMultiThreaded
+# Parameters: (allocatorType = Unsafe, size = 128)
+
+# Run progress: 0.00% complete, ETA 00:01:04
+# Fork: 1 of 1
+# Warmup Iteration   1: 20.977 ops/us
+# Warmup Iteration   2: 20.838 ops/us
+Iteration   1: 20.384 ops/us
+Iteration   2: 19.811 ops/us
+Iteration   3: 20.869 ops/us
+
+
+Result "org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateMultiThreaded":
+  20.355 卤(99.9%) 9.667 ops/us [Average]
+  (min, avg, max) = (19.811, 20.355, 20.869), stdev = 0.530
+  CI (99.9%): [10.687, 30.022] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, OpenJDK 64-Bit Server VM, 21+35-2513
+# VM invoker: D:\Tools\jdk\jdk-21\bin\java.exe
+# VM options: --add-exports=java.base/sun.nio.ch=ALL-UNNAMED -Xmx512M
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 1 s each
+# Measurement: 3 iterations, 2 s each
+# Timeout: 10 min per iteration
+# Threads: 4 threads, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateMultiThreaded
+# Parameters: (allocatorType = Unsafe, size = 8192)
+
+# Run progress: 12.50% complete, ETA 00:00:58
+# Fork: 1 of 1
+# Warmup Iteration   1: 20.018 ops/us
+# Warmup Iteration   2: 20.030 ops/us
+Iteration   1: 19.743 ops/us
+Iteration   2: 20.115 ops/us
+Iteration   3: 20.306 ops/us
+
+
+Result "org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateMultiThreaded":
+  20.055 卤(99.9%) 5.224 ops/us [Average]
+  (min, avg, max) = (19.743, 20.055, 20.306), stdev = 0.286
+  CI (99.9%): [14.831, 25.280] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, OpenJDK 64-Bit Server VM, 21+35-2513
+# VM invoker: D:\Tools\jdk\jdk-21\bin\java.exe
+# VM options: --add-exports=java.base/sun.nio.ch=ALL-UNNAMED -Xmx512M
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 1 s each
+# Measurement: 3 iterations, 2 s each
+# Timeout: 10 min per iteration
+# Threads: 4 threads, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateMultiThreaded
+# Parameters: (allocatorType = JNA, size = 128)
+
+# Run progress: 25.00% complete, ETA 00:00:49
+# Fork: 1 of 1
+# Warmup Iteration   1: 20.584 ops/us
+# Warmup Iteration   2: 22.203 ops/us
+Iteration   1: 21.839 ops/us
+Iteration   2: 22.694 ops/us
+Iteration   3: 22.409 ops/us
+
+
+Result "org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateMultiThreaded":
+  22.314 卤(99.9%) 7.946 ops/us [Average]
+  (min, avg, max) = (21.839, 22.314, 22.694), stdev = 0.436
+  CI (99.9%): [14.368, 30.260] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, OpenJDK 64-Bit Server VM, 21+35-2513
+# VM invoker: D:\Tools\jdk\jdk-21\bin\java.exe
+# VM options: --add-exports=java.base/sun.nio.ch=ALL-UNNAMED -Xmx512M
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 1 s each
+# Measurement: 3 iterations, 2 s each
+# Timeout: 10 min per iteration
+# Threads: 4 threads, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateMultiThreaded
+# Parameters: (allocatorType = JNA, size = 8192)
+
+# Run progress: 37.50% complete, ETA 00:00:41
+# Fork: 1 of 1
+# Warmup Iteration   1: 20.973 ops/us
+# Warmup Iteration   2: 23.018 ops/us
+Iteration   1: 23.055 ops/us
+Iteration   2: 23.278 ops/us
+Iteration   3: 23.190 ops/us
+
+
+Result "org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateMultiThreaded":
+  23.174 卤(99.9%) 2.052 ops/us [Average]
+  (min, avg, max) = (23.055, 23.174, 23.278), stdev = 0.112
+  CI (99.9%): [21.122, 25.226] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, OpenJDK 64-Bit Server VM, 21+35-2513
+# VM invoker: D:\Tools\jdk\jdk-21\bin\java.exe
+# VM options: --add-exports=java.base/sun.nio.ch=ALL-UNNAMED -Xmx512M
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 1 s each
+# Measurement: 3 iterations, 2 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateSingleThreaded
+# Parameters: (allocatorType = Unsafe, size = 128)
+
+# Run progress: 50.00% complete, ETA 00:00:33
+# Fork: 1 of 1
+# Warmup Iteration   1: 16.611 ops/us
+# Warmup Iteration   2: 16.711 ops/us
+Iteration   1: 14.734 ops/us
+Iteration   2: 14.335 ops/us
+Iteration   3: 14.737 ops/us
+
+
+Result "org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateSingleThreaded":
+  14.602 卤(99.9%) 4.213 ops/us [Average]
+  (min, avg, max) = (14.335, 14.602, 14.737), stdev = 0.231
+  CI (99.9%): [10.389, 18.815] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, OpenJDK 64-Bit Server VM, 21+35-2513
+# VM invoker: D:\Tools\jdk\jdk-21\bin\java.exe
+# VM options: --add-exports=java.base/sun.nio.ch=ALL-UNNAMED -Xmx512M
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 1 s each
+# Measurement: 3 iterations, 2 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateSingleThreaded
+# Parameters: (allocatorType = Unsafe, size = 8192)
+
+# Run progress: 62.50% complete, ETA 00:00:24
+# Fork: 1 of 1
+# Warmup Iteration   1: 14.748 ops/us
+# Warmup Iteration   2: 14.345 ops/us
+Iteration   1: 13.558 ops/us
+Iteration   2: 12.936 ops/us
+Iteration   3: 12.714 ops/us
+
+
+Result "org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateSingleThreaded":
+  13.069 卤(99.9%) 7.982 ops/us [Average]
+  (min, avg, max) = (12.714, 13.069, 13.558), stdev = 0.438
+  CI (99.9%): [5.087, 21.051] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, OpenJDK 64-Bit Server VM, 21+35-2513
+# VM invoker: D:\Tools\jdk\jdk-21\bin\java.exe
+# VM options: --add-exports=java.base/sun.nio.ch=ALL-UNNAMED -Xmx512M
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 1 s each
+# Measurement: 3 iterations, 2 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateSingleThreaded
+# Parameters: (allocatorType = JNA, size = 128)
+
+# Run progress: 75.00% complete, ETA 00:00:16
+# Fork: 1 of 1
+# Warmup Iteration   1: 19.474 ops/us
+# Warmup Iteration   2: 16.534 ops/us
+Iteration   1: 15.587 ops/us
+Iteration   2: 14.883 ops/us
+Iteration   3: 14.181 ops/us
+
+
+Result "org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateSingleThreaded":
+  14.884 卤(99.9%) 12.831 ops/us [Average]
+  (min, avg, max) = (14.181, 14.884, 15.587), stdev = 0.703
+  CI (99.9%): [2.053, 27.714] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, OpenJDK 64-Bit Server VM, 21+35-2513
+# VM invoker: D:\Tools\jdk\jdk-21\bin\java.exe
+# VM options: --add-exports=java.base/sun.nio.ch=ALL-UNNAMED -Xmx512M
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 1 s each
+# Measurement: 3 iterations, 2 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateSingleThreaded
+# Parameters: (allocatorType = JNA, size = 8192)
+
+# Run progress: 87.50% complete, ETA 00:00:08
+# Fork: 1 of 1
+# Warmup Iteration   1: 17.094 ops/us
+# Warmup Iteration   2: 18.106 ops/us
+Iteration   1: 16.160 ops/us
+Iteration   2: 15.723 ops/us
+Iteration   3: 16.094 ops/us
+
+
+Result "org.caffinitas.ohc.jmh.AllocatorBenchmark.allocateSingleThreaded":
+  15.993 卤(99.9%) 4.300 ops/us [Average]
+  (min, avg, max) = (15.723, 15.993, 16.160), stdev = 0.236
+  CI (99.9%): [11.693, 20.292] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:01:06
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+NOTE: Current JVM experimentally supports Compiler Blackholes, and they are in use. Please exercise
+extra caution when trusting the results, look into the generated code to check the benchmark still
+works, and factor in a small probability of new VM bugs. Additionally, while comparisons between
+different JVMs are already problematic, the performance difference caused by different Blackhole
+modes can be very significant. Please make sure you use the consistent Blackhole mode for comparisons.
+
+Benchmark                                  (allocatorType)  (size)   Mode  Cnt   Score    Error   Units
+AllocatorBenchmark.allocateMultiThreaded            Unsafe     128  thrpt    3  20.355 卤  9.667  ops/us
+AllocatorBenchmark.allocateMultiThreaded            Unsafe    8192  thrpt    3  20.055 卤  5.224  ops/us
+AllocatorBenchmark.allocateMultiThreaded               JNA     128  thrpt    3  22.314 卤  7.946  ops/us
+AllocatorBenchmark.allocateMultiThreaded               JNA    8192  thrpt    3  23.174 卤  2.052  ops/us
+AllocatorBenchmark.allocateSingleThreaded           Unsafe     128  thrpt    3  14.602 卤  4.213  ops/us
+AllocatorBenchmark.allocateSingleThreaded           Unsafe    8192  thrpt    3  13.069 卤  7.982  ops/us
+AllocatorBenchmark.allocateSingleThreaded              JNA     128  thrpt    3  14.884 卤 12.831  ops/us
+AllocatorBenchmark.allocateSingleThreaded              JNA    8192  thrpt    3  15.993 卤  4.300  ops/us

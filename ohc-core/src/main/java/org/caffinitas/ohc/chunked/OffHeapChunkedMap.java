@@ -28,8 +28,6 @@ import org.caffinitas.ohc.Ticker;
 import org.caffinitas.ohc.histo.EstimatedHistogram;
 import sun.nio.ch.DirectBuffer;
 
-import static org.caffinitas.ohc.util.ByteBufferCompat.*;
-
 final class OffHeapChunkedMap
 {
     // maximum hash table size
@@ -244,7 +242,7 @@ final class OffHeapChunkedMap
                 serBuffer = ByteBuffer.allocate(valueLen);
 
                 Uns.copyMemory(((DirectBuffer)memory).address(), hashEntryValueOffset, serBuffer.array(), 0, valueLen);
-                byteBufferLimit(serBuffer, valueLen);
+                serBuffer.limit(valueLen);
 
                 break;
             }
@@ -559,7 +557,7 @@ final class OffHeapChunkedMap
         {
             // It's important to initialize the hash table memory.
             // (uninitialized memory will cause problems - endless loops, JVM crashes, damaged data, etc)
-            byteBufferClear(table);
+            table.clear();
             while (table.remaining() > 8)
                 table.putLong(0L);
             while (table.remaining() > 0)
@@ -690,7 +688,7 @@ final class OffHeapChunkedMap
                 if (n == entries || n == limit)
                     return endOfData();
 
-                byteBufferClear(snaphotBuffer);
+                snaphotBuffer.clear();
                 int keyLen;
                 int reservedLen;
                 boolean removed;
@@ -717,8 +715,8 @@ final class OffHeapChunkedMap
                 if (!removed)
                 {
 
-                    byteBufferPosition(snaphotBuffer, keyOff);
-                    byteBufferLimit(snaphotBuffer, keyOff + keyLen);
+                    snaphotBuffer.position(keyOff);
+                    snaphotBuffer.limit(keyOff + keyLen);
                     return snaphotBuffer;
                 }
             }
@@ -747,8 +745,8 @@ final class OffHeapChunkedMap
                     try
                     {
                         Uns.copyMemory(((DirectBuffer)memory).address(), chunkOffset(chunk), snaphotBuffer.array(), 0, chunkFullSize);
-                        byteBufferPosition(snaphotBuffer, 0);
-                        byteBufferLimit(snaphotBuffer, chunkFullSize);
+                        snaphotBuffer.position(0);
+                        snaphotBuffer.limit(chunkFullSize);
 
                         snapshotIterator = new ChunkSnapshotIterator(keysPerChunk, snaphotBuffer);
                     }

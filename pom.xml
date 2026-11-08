@@ -68,40 +68,39 @@
 
     <modules>
         <module>ohc-core</module>
-<!--        <module>ohc-benchmark</module>-->
-<!--        <module>ohc-jmh</module>-->
+        <module>ohc-benchmark</module>
+        <module>ohc-jmh</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.com.google.guava>31.0.1-jre</version.com.google.guava>
+        <version.com.google.guava>33.8.0-jre</version.com.google.guava>
         <version.external.atlassian.jgitflow.jgitflow-maven-plugin>1.0-m5.1</version.external.atlassian.jgitflow.jgitflow-maven-plugin>
-        <version.net.java.dev.jna>5.10.0</version.net.java.dev.jna>
-        <version.net.jpountz.lz4>1.3.0</version.net.jpountz.lz4>
-        <version.org.ow2.asm>9.2</version.org.ow2.asm>
-        <version.org.apache.felix.maven-bundle-plugin>5.1.1</version.org.apache.felix.maven-bundle-plugin>
-        <version.org.apache.maven.plugins.maven-assembly-plugin>3.3.0</version.org.apache.maven.plugins.maven-assembly-plugin>
-        <version.org.apache.maven.plugins.maven-compiler-plugin>3.8.1</version.org.apache.maven.plugins.maven-compiler-plugin>
-        <version.org.apache.maven.plugins.maven-dependency-plugin>3.1.2</version.org.apache.maven.plugins.maven-dependency-plugin>
-        <version.org.apache.maven.plugins.maven-gpg-plugin>1.6</version.org.apache.maven.plugins.maven-gpg-plugin>
-        <version.org.apache.maven.plugins.maven-jar-plugin>3.2.0</version.org.apache.maven.plugins.maven-jar-plugin>
-        <version.org.apache.maven.plugins.maven-javadoc-plugin>3.2.0</version.org.apache.maven.plugins.maven-javadoc-plugin>
-        <version.org.apache.maven.plugins.maven-project-info-reports-plugin>3.1.1</version.org.apache.maven.plugins.maven-project-info-reports-plugin>
-        <version.org.apache.maven.plugins.maven-site-plugin>3.9.1</version.org.apache.maven.plugins.maven-site-plugin>
-        <version.org.apache.maven.plugins.maven-shade-plugin>3.2.4</version.org.apache.maven.plugins.maven-shade-plugin>
-        <version.org.apache.maven.plugins.maven-source-plugin>3.2.1</version.org.apache.maven.plugins.maven-source-plugin>
-        <version.org.apache.maven.plugins.maven-surefire-plugin>2.22.2</version.org.apache.maven.plugins.maven-surefire-plugin>
-        <version.org.apache.maven.plugins.maven-surefire-report-plugin>2.22.2</version.org.apache.maven.plugins.maven-surefire-report-plugin>
-        <version.org.apache.logging.log4j>2.16.0</version.org.apache.logging.log4j>
+        <version.net.java.dev.jna>5.19.1</version.net.java.dev.jna>
+        <version.at.yawk.lz4.lz4-java>1.13.0</version.at.yawk.lz4.lz4-java>
+        <version.org.apache.felix.maven-bundle-plugin>5.1.9</version.org.apache.felix.maven-bundle-plugin>
+        <version.org.apache.maven.plugins.maven-assembly-plugin>3.6.0</version.org.apache.maven.plugins.maven-assembly-plugin>
+        <version.org.apache.maven.plugins.maven-compiler-plugin>3.13.0</version.org.apache.maven.plugins.maven-compiler-plugin>
+        <version.org.apache.maven.plugins.maven-dependency-plugin>3.6.1</version.org.apache.maven.plugins.maven-dependency-plugin>
+        <version.org.apache.maven.plugins.maven-gpg-plugin>3.2.4</version.org.apache.maven.plugins.maven-gpg-plugin>
+        <version.org.apache.maven.plugins.maven-jar-plugin>3.4.1</version.org.apache.maven.plugins.maven-jar-plugin>
+        <version.org.apache.maven.plugins.maven-javadoc-plugin>3.6.3</version.org.apache.maven.plugins.maven-javadoc-plugin>
+        <version.org.apache.maven.plugins.maven-project-info-reports-plugin>3.5.0</version.org.apache.maven.plugins.maven-project-info-reports-plugin>
+        <version.org.apache.maven.plugins.maven-site-plugin>3.12.1</version.org.apache.maven.plugins.maven-site-plugin>
+        <version.org.apache.maven.plugins.maven-shade-plugin>3.5.2</version.org.apache.maven.plugins.maven-shade-plugin>
+        <version.org.apache.maven.plugins.maven-source-plugin>3.3.0</version.org.apache.maven.plugins.maven-source-plugin>
+        <version.org.apache.maven.plugins.maven-surefire-plugin>3.2.5</version.org.apache.maven.plugins.maven-surefire-plugin>
+        <version.org.apache.maven.plugins.maven-surefire-report-plugin>3.2.5</version.org.apache.maven.plugins.maven-surefire-report-plugin>
+        <version.org.apache.logging.log4j>2.26.1</version.org.apache.logging.log4j>
         <version.org.codehaus.mojo.cobertura-maven-plugin>2.7</version.org.codehaus.mojo.cobertura-maven-plugin>
         <version.org.codehaus.mojo.exec-maven-plugin>3.0.0</version.org.codehaus.mojo.exec-maven-plugin>
         <version.org.sonatype.central.central-publishing-maven-plugin>0.10.0</version.org.sonatype.central.central-publishing-maven-plugin>
-        <version.org.slf4j>1.7.32</version.org.slf4j>
-        <version.org.testng>7.4.0</version.org.testng>
+        <version.org.slf4j>2.0.20</version.org.slf4j>
+        <version.org.testng>7.12.0</version.org.testng>
         <version.org.hamcrest>2.2</version.org.hamcrest>
-        <version.org.xerial.snappy>1.1.8.4</version.org.xerial.snappy>
-        <surefire.jvmargs>--add-exports java.base/sun.nio.ch=ALL-UNNAMED</surefire.jvmargs>
+        <version.org.xerial.snappy>1.1.10.12</version.org.xerial.snappy>
+        <surefire.jvmargs>--enable-preview --add-exports java.base/sun.nio.ch=ALL-UNNAMED</surefire.jvmargs>
     </properties>
 
     <dependencyManagement>
@@ -133,7 +132,7 @@
 
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-slf4j-impl</artifactId>
+                <artifactId>log4j-slf4j2-impl</artifactId>
                 <version>${version.org.apache.logging.log4j}</version>
                 <scope>test</scope>
             </dependency>
@@ -163,15 +162,9 @@
             </dependency>
 
             <dependency>
-                <groupId>org.ow2.asm</groupId>
-                <artifactId>asm</artifactId>
-                <version>${version.org.ow2.asm}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>net.jpountz.lz4</groupId>
-                <artifactId>lz4</artifactId>
-                <version>${version.net.jpountz.lz4}</version>
+                <groupId>at.yawk.lz4</groupId>
+                <artifactId>lz4-java</artifactId>
+                <version>${version.at.yawk.lz4.lz4-java}</version>
             </dependency>
 
             <dependency>
@@ -216,12 +209,20 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${version.org.apache.maven.plugins.maven-compiler-plugin}</version>
                     <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
+                        <source>21</source>
+                        <target>21</target>
 
                         <compilerArgs>
                             <!-- Maven incremental build always detects package-info.java as "stale" -->
                             <arg>-Xpkginfo:always</arg>
+                            <!-- B1 (decision B): FFM API (java.lang.foreign) is a preview feature in JDK 21
+                                 (JEP 442; finalized only in JDK 22). Compiling against it requires enable-preview.
+                                 Note: enable-preview is incompatible with the release flag, hence source/target 21. -->
+                            <arg>--enable-preview</arg>
+                            <!-- sun.nio.ch.DirectBuffer is used by chunked impl; not exported by java.base by default.
+                                 Will be removed once the code migrates to java.lang.foreign.MemorySegment (planned for 1.0). -->
+                            <arg>--add-exports</arg>
+                            <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
                         </compilerArgs>
                     </configuration>
                 </plugin>
@@ -238,7 +239,7 @@
                         <show>protected</show>
                         <includeDependencySources>false</includeDependencySources>
                         <includeTransitiveDependencySources>false</includeTransitiveDependencySources>
-                        <source>8</source>
+                        <source>21</source>
                     </configuration>
                     <executions>
                         <execution>
@@ -391,7 +392,7 @@
                     <failOnError>false</failOnError>
                     <includeDependencySources>true</includeDependencySources>
                     <includeTransitiveDependencySources>false</includeTransitiveDependencySources>
-                    <source>8</source>
+                    <source>21</source>
                 </configuration>
                 <reportSets>
                     <reportSet>
