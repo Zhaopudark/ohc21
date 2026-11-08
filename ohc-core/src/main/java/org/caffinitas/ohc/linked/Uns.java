@@ -265,26 +265,29 @@ final class Uns
     static void copyMemory(byte[] arr, int off, long address, long offset, long len)
     {
         validate(address, offset, len);
-        unsafe.copyMemory(arr, Unsafe.ARRAY_BYTE_BASE_OFFSET + off, null, address + offset, len);
+        MemorySegment.copy(MemorySegment.ofArray(arr), off,
+                           MemorySegment.ofAddress(address + offset).reinterpret(len), 0L, len);
     }
 
     static void copyMemory(long address, long offset, byte[] arr, int off, long len)
     {
         validate(address, offset, len);
-        unsafe.copyMemory(null, address + offset, arr, Unsafe.ARRAY_BYTE_BASE_OFFSET + off, len);
+        MemorySegment.copy(MemorySegment.ofAddress(address + offset).reinterpret(len), 0L,
+                           MemorySegment.ofArray(arr), off, len);
     }
 
     static void copyMemory(long src, long srcOffset, long dst, long dstOffset, long len)
     {
         validate(src, srcOffset, len);
         validate(dst, dstOffset, len);
-        unsafe.copyMemory(null, src + srcOffset, null, dst + dstOffset, len);
+        MemorySegment.copy(MemorySegment.ofAddress(src + srcOffset).reinterpret(len), 0L,
+                           MemorySegment.ofAddress(dst + dstOffset).reinterpret(len), 0L, len);
     }
 
     static void setMemory(long address, long offset, long len, byte val)
     {
         validate(address, offset, len);
-        unsafe.setMemory(address + offset, len, val);
+        MemorySegment.ofAddress(address + offset).reinterpret(len).fill(val);
     }
 
     static boolean memoryCompare(long adr1, long off1, long adr2, long off2, long len)

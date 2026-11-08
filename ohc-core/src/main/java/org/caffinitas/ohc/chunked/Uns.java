@@ -15,6 +15,7 @@
  */
 package org.caffinitas.ohc.chunked;
 
+import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Field;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -154,12 +155,14 @@ final class Uns
 
     static void copyMemory(byte[] arr, int off, long address, long offset, long len)
     {
-        unsafe.copyMemory(arr, Unsafe.ARRAY_BYTE_BASE_OFFSET + off, null, address + offset, len);
+        MemorySegment.copy(MemorySegment.ofArray(arr), off,
+                           MemorySegment.ofAddress(address + offset).reinterpret(len), 0L, len);
     }
 
     static void copyMemory(long address, long offset, byte[] arr, int off, long len)
     {
-        unsafe.copyMemory(null, address + offset, arr, Unsafe.ARRAY_BYTE_BASE_OFFSET + off, len);
+        MemorySegment.copy(MemorySegment.ofAddress(address + offset).reinterpret(len), 0L,
+                           MemorySegment.ofArray(arr), off, len);
     }
 
     static long getTotalAllocated()

@@ -96,6 +96,15 @@ java --add-exports java.base/sun.nio.ch=ALL-UNNAMED \
 
 判读：多线程 get 与两个 put 均在噪声/3% 内；唯单线程 get 名义 -6% 但两个 99.9% CI 大幅重叠（Δ0.22 ≈ 单侧误差），不显著但需警惕。根因：FFM `directBufferFor` 每次 get 反序列化物化 `ofAddress`+`reinterpret`+`asByteBuffer` 3 对象，旧 hack 仅 `allocateInstance` 1 对象。B1a 为冷路径改动，单线程 get 的小幅开销在预期内，待 B1c 全量后整体复测决定是否优化 view 构造。
 
+### 补充：同会话跨小时仍漂移 → 必须"相邻背靠背"配对（B1b 实测）
+
+- B1b（copyMemory/setMemory）测得 getMulti≈21.2 / getSingle≈3.80，看似比早先同会话的 unsafe(17.66)/B1a(17.73) **高 ~20%**——但 B1b 代码不碰 get 元素访问，不可能变快。
+- 重跑同一 B1b jar 得 21.1（自洽）→ 机器约 1 小时前处于"慢档"(~17.7)、现处于"快档"(~21)，**同一会话内跨小时也漂移 ±15-20%**。
+- 因此护栏的硬性要求升级为：**两个变体必须在数分钟内背靠背测**（临时 stash→建→测→恢复→建→测，相邻），绝不跨时段比绝对值。
+- B1b vs B1a 相邻同段（快档）：getMulti 21.07→21.27(+1.0%)、getSingle 3.80→3.80(0%)、putMulti 6.36→6.38(+0.3%)、putSingle 2.16→2.21(+2.1%)，CI 全重叠 → **B1b 性能中性**。
+
+> 结论：本机（hybrid P/E 笔记本）噪声带宽 ~15-20%，远超 3% 闸门。相邻背靠背可缓解但不足以分辨 <5% 的效应；要精确 gate 需更稳的环境（定频/关 E 核/服务器，或多次交错取中位数）。当前对"是否显著回退"的判断以相邻配对的 CI 是否重叠为准。
+
 ## 待补基线（可选，B1 进入 chunked 路径时补）
 
 本轮未覆盖 chunked 实现（`-p chunkSz=65536`）与其余 hash 算法。进入涉及 chunked 的迁移子步前，需按"同会话 A/B"协议补采 chunkSz=65536 的配对基线作为该路径护栏。

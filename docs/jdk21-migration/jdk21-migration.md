@@ -297,7 +297,8 @@
 **B1 子步进度**：
 - ✅ **B1a（linked 冷路径）** 2026-11-09：`linked/Uns.directBufferFor`/`invalidateDirectBuffer` 从 `allocateInstance`+字段偏移 hack 改为 `MemorySegment.ofAddress().reinterpret().asByteBuffer()`；invalidate 用 public `buffer.limit(0)` 保留防 use-after-free 语义。`mvn test` 631×3 全绿。同会话 A/B：多线程 get 持平(+0.4%)、put 在 3% 内、单线程 get 名义 -6.2% 但 CI 重叠不显著（根因见 `baseline-unsafe.md` 方法论修正）。
 - ⬜ **B1a（chunked 冷路径）**：`chunked/Uns.allocate→ByteBuffer`、`free(ByteBuffer)`（用 `DirectBuffer.address()`）、`directBufferFor(len)`、`OffHeapChunkedMap` 的 `((DirectBuffer)memory).address()` 共 5 处 → 改持 `MemorySegment`。需先补 chunkSz=65536 同会话基线。
-- ⬜ **B1b**：`copyMemory`→`MemorySegment.copy`、`setMemory`→`fill`、`getAndSetLong/getAndAddInt`→atomic VarHandle。
+- ✅ **B1b（copyMemory/setMemory）** 2026-11-09：linked + chunked 的 `copyMemory`→`MemorySegment.copy(...)`、`setMemory`→`fill`。测试 631×3 全绿。**相邻同段 A/B**：B1b vs B1a 全项 ±2%、CI 重叠 → 性能中性。
+  - ⚠️ **原子操作拆分延后**：探针证实 JDK 21 preview `MemorySegment` **无任何 atomic/VarHandle/compareAndSet/getAndAdd**（这些是 22 final 才加）。故 refcount `increment`/`decrement`（getAndAddInt）与 `getAndPutLong`（getAndSetLong）**无 FFM 等价，仍留 `sun.misc.Unsafe`** → 归 **B4** 或 **JDK 22**。含义：**21 上无法 100% 移除 sun.misc.Unsafe**，最多降到只剩这几个原子方法。
 - ⬜ **B1c**：热路径 `getLong/putLong/...` 切 segment；全量后整体复测决定是否优化 view 构造。
 - 构建侧：`--enable-preview` 已接入 compiler/javadoc/surefire/JMH-exec（父 pom + ohc-core + ohc-jmh）。
 
@@ -572,7 +573,10 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 - 构建接入 `--enable-preview`：父 pom compilerArgs、ohc-core javadoc、surefire.jvmargs、ohc-jmh compiler+exec、（chunked 仍保留 `--add-exports`）
 - 完成 **B1a（linked 冷路径）**：`directBufferFor`/`invalidateDirectBuffer` → FFM `asByteBuffer`；测试 631×3 全绿
 - **方法论修正**：发现跨会话基线不可用（同机同码 day-over-day 差 15-20%，混合 CPU 漂移）→ 护栏改为同会话 A/B。B1a 同会话配对：多线程 get 持平、put 在阈值内、单线程 get -6.2%（CI 重叠不显著）
-- 提交 `6b212a1` 到 `feature/b1-ffm`（`mvn clean install -DskipJmh` 全 4 模块 SUCCESS 验证后）：phase A + C1 + B1a 里程碑。注：因 pom/linked/Uns 被多 spec 交织，按可构建原则合并为单提交；设了**仓库本地** git 身份（Pu Zhao，非全局），未做 GPG 签名
+- 提交 `6409777` 到 `feature/b1-ffm`（`mvn clean install -DskipJmh` 全 4 模块 SUCCESS 验证后）：phase A + C1 + B1a 里程碑。注：因 pom/linked/Uns 被多 spec 交织，按可构建原则合并为单提交；设了**仓库本地** git 身份（Pu Zhao，非全局），未做 GPG 签名
+- 探针确认 21 preview FFM 能力面：有 `ofAddress/ofArray/reinterpret/fill/copy/asByteBuffer/asSlice/get/set(ValueLayout)`，**无 atomic/VarHandle**
+- 完成 **B1b（copy/set）**：linked+chunked `copyMemory`→`MemorySegment.copy`、`setMemory`→`fill`；测试 631×3 全绿；相邻同段 A/B vs B1a 全项 ±2%（中性）
+- **新发现**：21 preview 无堆外原子 → refcount/CAS（increment/decrement/getAndPutLong）**留 Unsafe，无法在 21 全移除**（归 B4/22）。护栏方法论再升级：同会话跨小时也漂移，必须**背靠背配对**
 
 ---
 
