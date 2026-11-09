@@ -26,7 +26,6 @@ import org.caffinitas.ohc.CacheSerializer;
 import org.caffinitas.ohc.OHCacheBuilder;
 import org.caffinitas.ohc.Ticker;
 import org.caffinitas.ohc.histo.EstimatedHistogram;
-import sun.nio.ch.DirectBuffer;
 
 final class OffHeapChunkedMap
 {
@@ -78,6 +77,7 @@ final class OffHeapChunkedMap
     private int writeChunkOffset;
     private int writeChunkFree;
 
+    private final long memoryAddress;
     private final ByteBuffer memory;
 
     OffHeapChunkedMap(OHCacheBuilder builder, long freeCapacity, long chunkSize)
@@ -105,7 +105,8 @@ final class OffHeapChunkedMap
         this.capacity = Ints.checkedCast(chunkCount * chunkSize);
         this.freeCapacity = this.capacity;
         int allocSize = Ints.checkedCast((long)chunkCount * (long)chunkFullSize);
-        memory = Uns.allocate(allocSize, throwOOME);
+        memoryAddress = Uns.allocateAddress(allocSize, throwOOME);
+        memory = memoryAddress != 0L ? Uns.directBufferFor(memoryAddress, allocSize) : null;
 
         for (int i = 0; i < chunkCount; i++)
             resetChunk(i);
@@ -192,7 +193,7 @@ final class OffHeapChunkedMap
         boolean wasFirst = lock(); 
         try
         {
-            Uns.free(memory);
+            Uns.free(memoryAddress);
 
             table.release();
             table = null;
@@ -241,7 +242,7 @@ final class OffHeapChunkedMap
                 int hashEntryValueOffset = hashEntryOffset + Util.entryOffData(isFixedSize()) + keyLen;
                 serBuffer = ByteBuffer.allocate(valueLen);
 
-                Uns.copyMemory(((DirectBuffer)memory).address(), hashEntryValueOffset, serBuffer.array(), 0, valueLen);
+                Uns.copyMemory(memoryAddress, hashEntryValueOffset, serBuffer.array(), 0, valueLen);
                 serBuffer.limit(valueLen);
 
                 break;
@@ -302,7 +303,7 @@ final class OffHeapChunkedMap
                             setValueLen(hashEntryOffset, getValueLen(newHashEntry));
 
                         Uns.copyMemory(newHashEntry.array(), valueOffset,
-                                       ((DirectBuffer)memory).address(), hashEntryValueOffset,
+                                       memoryAddress, hashEntryValueOffset,
                                        entryBytes - valueOffset);
 
                         putReplaceCount++;
@@ -379,7 +380,7 @@ final class OffHeapChunkedMap
             hashEntryOffset = chunkOffset(writeChunk) + writeChunkOffset;
 
             Uns.copyMemory(newHashEntry.array(), newHashEntry.position(),
-                           ((DirectBuffer)memory).address(), hashEntryOffset,
+                           memoryAddress, hashEntryOffset,
                            entryBytes - newHashEntry.position());
 
             writeChunkOffset += entryBytes;
@@ -534,21 +535,26 @@ final class OffHeapChunkedMap
     private Table createTable(int hashTableSize, boolean throwOOME)
     {
         int msz = Table.BUCKET_ENTRY_LEN * hashTableSize;
-        ByteBuffer table = Uns.allocate(msz, throwOOME);
-        return table == null ? null : new Table(table, hashTableSize);
+        long address = Uns.allocateAddress(msz, throwOOME);
+        if (address == 0L)
+            return null;
+        ByteBuffer table = Uns.directBufferFor(address, msz);
+        return new Table(table, address, hashTableSize);
     }
 
     private final class Table
     {
         final int mask;
+        final long address;
         final ByteBuffer table;
         private boolean released;
 
         static final int BUCKET_ENTRY_LEN = 4;
 
-        private Table(ByteBuffer table, int hashTableSize)
+        private Table(ByteBuffer table, long address, int hashTableSize)
         {
             this.table = table;
+            this.address = address;
             this.mask = hashTableSize - 1;
             clear();
         }
@@ -566,14 +572,14 @@ final class OffHeapChunkedMap
 
         void release()
         {
-            Uns.free(table);
+            Uns.free(address);
             released = true;
         }
 
         protected void finalize() throws Throwable
         {
             if (!released)
-                Uns.free(table);
+                Uns.free(address);
             super.finalize();
         }
 
@@ -744,7 +750,7 @@ final class OffHeapChunkedMap
                     boolean wasFirst = lock(); 
                     try
                     {
-                        Uns.copyMemory(((DirectBuffer)memory).address(), chunkOffset(chunk), snaphotBuffer.array(), 0, chunkFullSize);
+                        Uns.copyMemory(memoryAddress, chunkOffset(chunk), snaphotBuffer.array(), 0, chunkFullSize);
                         snaphotBuffer.position(0);
                         snaphotBuffer.limit(chunkFullSize);
 

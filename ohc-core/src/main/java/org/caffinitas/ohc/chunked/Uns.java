@@ -16,8 +16,6 @@
 package org.caffinitas.ohc.chunked;
 
 import java.lang.foreign.MemorySegment;
-import java.lang.reflect.Field;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
@@ -31,14 +29,11 @@ import org.caffinitas.ohc.OHCacheBuilder;
 import org.caffinitas.ohc.alloc.IAllocator;
 import org.caffinitas.ohc.alloc.JNANativeAllocator;
 import org.caffinitas.ohc.alloc.UnsafeAllocator;
-import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
 
 final class Uns
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Uns.class);
 
-    private static final Unsafe unsafe;
     private static final IAllocator allocator;
 
     private static final boolean __DEBUG_OFF_HEAP_MEMORY_ACCESS = Boolean.parseBoolean(System.getProperty(OHCacheBuilder.SYSTEM_PROPERTY_PREFIX + "debugOffHeapAccess", "false"));
@@ -116,37 +111,24 @@ final class Uns
 
     static
     {
-        try
+        if (__DEBUG_OFF_HEAP_MEMORY_ACCESS)
+            LOGGER.warn("Degraded performance due to off-heap memory allocations and access guarded by debug code enabled via system property " + OHCacheBuilder.SYSTEM_PROPERTY_PREFIX + "debugOffHeapAccess=true");
+
+        IAllocator alloc;
+        String allocType = __ALLOCATOR != null ? __ALLOCATOR : "jna";
+        switch (allocType)
         {
-            Field field = Unsafe.class.getDeclaredField("theUnsafe");
-            field.setAccessible(true);
-            unsafe = (Unsafe) field.get(null);
-            if (unsafe.addressSize() > 8)
-                throw new RuntimeException("Address size " + unsafe.addressSize() + " not supported yet (max 8 bytes)");
-
-            if (__DEBUG_OFF_HEAP_MEMORY_ACCESS)
-                LOGGER.warn("Degraded performance due to off-heap memory allocations and access guarded by debug code enabled via system property " + OHCacheBuilder.SYSTEM_PROPERTY_PREFIX + "debugOffHeapAccess=true");
-
-            IAllocator alloc;
-            String allocType = __ALLOCATOR != null ? __ALLOCATOR : "jna";
-            switch (allocType)
-            {
-                case "unsafe":
-                    alloc = new UnsafeAllocator();
-                    LOGGER.info("OHC using sun.misc.Unsafe memory allocation");
-                    break;
-                case "jna":
-                default:
-                    alloc = new JNANativeAllocator();
-                    LOGGER.info("OHC using JNA OS native malloc/free");
-            }
-
-            allocator = alloc;
+            case "unsafe":
+                alloc = new UnsafeAllocator();
+                LOGGER.info("OHC using sun.misc.Unsafe memory allocation");
+                break;
+            case "jna":
+            default:
+                alloc = new JNANativeAllocator();
+                LOGGER.info("OHC using JNA OS native malloc/free");
         }
-        catch (Exception e)
-        {
-            throw new AssertionError(e);
-        }
+
+        allocator = alloc;
     }
 
     private Uns()
@@ -170,73 +152,35 @@ final class Uns
         return allocator.getTotalAllocated();
     }
 
-    static ByteBuffer allocate(long bytes, boolean throwOOME)
+    static long allocateAddress(long bytes, boolean throwOOME)
     {
         long address = allocator.allocate(bytes);
         if (address != 0L)
-            allocated(address, bytes);
-        else
         {
-            if (throwOOME)
-                throw new OutOfMemoryError("unable to allocate " + bytes + " in off-heap");
-            return null;
+            allocated(address, bytes);
+            return address;
         }
-        return directBufferFor(address, bytes);
+        if (throwOOME)
+            throw new OutOfMemoryError("unable to allocate " + bytes + " in off-heap");
+        return 0L;
     }
 
-    static void free(ByteBuffer buffer)
+    static void free(long address)
     {
-        if (buffer == null || !DIRECT_BYTE_BUFFER_CLASS.isAssignableFrom(buffer.getClass()))
+        if (address == 0L)
             return;
-
-        long address = ((DirectBuffer) buffer).address();
-
         freed(address);
         allocator.free(address);
-    }
-
-    private static final Class<?> DIRECT_BYTE_BUFFER_CLASS;
-    private static final long DIRECT_BYTE_BUFFER_ADDRESS_OFFSET;
-    private static final long DIRECT_BYTE_BUFFER_CAPACITY_OFFSET;
-    private static final long DIRECT_BYTE_BUFFER_LIMIT_OFFSET;
-
-    static
-    {
-        try
-        {
-            ByteBuffer directBuffer = ByteBuffer.allocateDirect(0);
-            Class<?> clazz = directBuffer.getClass();
-            DIRECT_BYTE_BUFFER_ADDRESS_OFFSET = unsafe.objectFieldOffset(Buffer.class.getDeclaredField("address"));
-            DIRECT_BYTE_BUFFER_CAPACITY_OFFSET = unsafe.objectFieldOffset(Buffer.class.getDeclaredField("capacity"));
-            DIRECT_BYTE_BUFFER_LIMIT_OFFSET = unsafe.objectFieldOffset(Buffer.class.getDeclaredField("limit"));
-            DIRECT_BYTE_BUFFER_CLASS = clazz;
-        }
-        catch (NoSuchFieldException e)
-        {
-            throw new RuntimeException(e);
-        }
     }
 
     static ByteBuffer directBufferFor(long address, long len)
     {
         if (len > Integer.MAX_VALUE || len < 0L)
             throw new IllegalArgumentException();
-        try
-        {
-            ByteBuffer bb = (ByteBuffer) unsafe.allocateInstance(DIRECT_BYTE_BUFFER_CLASS);
-            unsafe.putLong(bb, DIRECT_BYTE_BUFFER_ADDRESS_OFFSET, address);
-            unsafe.putInt(bb, DIRECT_BYTE_BUFFER_CAPACITY_OFFSET, (int) len);
-            unsafe.putInt(bb, DIRECT_BYTE_BUFFER_LIMIT_OFFSET, (int) len);
-            bb.order(ByteOrder.BIG_ENDIAN);
-            return bb;
-        }
-        catch (Error e)
-        {
-            throw e;
-        }
-        catch (Throwable t)
-        {
-            throw new RuntimeException(t);
-        }
+        // FFM zero-copy view; GLOBAL scope, lifetime managed by the allocator (explicit free),
+        // replacing the previous sun.misc.Unsafe.allocateInstance + Buffer-field-offset hack.
+        ByteBuffer bb = MemorySegment.ofAddress(address).reinterpret(len).asByteBuffer();
+        bb.order(ByteOrder.BIG_ENDIAN);
+        return bb;
     }
 }

@@ -154,8 +154,8 @@ public class UnsTest
     @Test
     public void testAllocate() throws Exception
     {
-        ByteBuffer adr = Uns.allocate(100, true);
-        assertNotNull(adr);
+        long adr = Uns.allocateAddress(100, true);
+        assertTrue(adr != 0L);
         Uns.free(adr);
     }
 
@@ -180,7 +180,7 @@ public class UnsTest
 //                Uns.free(adr);
 //        }
 
-        ByteBuffer adr = Uns.allocate(128 * 1024 * 1024, true);
+        long adr = Uns.allocateAddress(128 * 1024 * 1024, true);
         try
         {
             assertTrue(Uns.getTotalAllocated() > before);
