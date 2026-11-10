@@ -40,7 +40,7 @@
 
 | ID | 标题 | 状态 | 依赖 |
 |---|---|---|---|
-| B1 | 用 `MemorySegment`/`Arena` 替代 `Unsafe` + `DirectBuffer` | 🟡 进行中 | A2, A3, C1 |
+| B1 | 用 `MemorySegment`/`Arena` 替代 `Unsafe` + `DirectBuffer` | ✅ 完成（原子残留待22/B4） | A2, A3, C1 |
 | B2 | 重新设计分配器 `IAllocator`，新增 `ForeignMemoryAllocator` 为默认 | ⬜ 未开始 | B1 |
 | B3 | 去掉 Guava 依赖 | ⬜ 未开始 | A3 |
 | B4 | 并发原语现代化（`VarHandle` 替换 `Unsafe` CAS，`StampedLock` 评估） | ⬜ 未开始 | B1 |
@@ -299,7 +299,11 @@
 - ✅ **B1a-chunked** 2026-11-09：`chunked/Uns` 移除 `sun.misc.Unsafe`+`sun.nio.ch.DirectBuffer`——`allocate(ByteBuffer)`/`free(ByteBuffer)`→`allocateAddress(long)`/`free(long)`，`directBufferFor`→`MemorySegment.asByteBuffer()`，删 `allocateInstance`+字段偏移 hack 与 `theUnsafe` 反射（chunked 无元素级 unsafe，整类去 Unsafe）；`OffHeapChunkedMap` 的 `memory`/`Table.table` 各存 `xxxAddress` 供 free/copyMemory（×4）用；同步改 `chunked/UnsTest`、`chunked/HasherTest`。测试 631×3 全绿。**生产代码已无 `sun.nio.ch.DirectBuffer`**（仅 `chunked/UnsTest` 取址用，靠测试侧 add-exports）。per-op 访问未变（段构造期建 buffer），无结构性性能影响；chunked 正式 A/B 待基线补齐。
 - ✅ **B1b（copyMemory/setMemory）** 2026-11-09：linked + chunked 的 `copyMemory`→`MemorySegment.copy(...)`、`setMemory`→`fill`。测试 631×3 全绿。**相邻同段 A/B**：B1b vs B1a 全项 ±2%、CI 重叠 → 性能中性。
   - ⚠️ **原子操作拆分延后**：探针证实 JDK 21 preview `MemorySegment` **无任何 atomic/VarHandle/compareAndSet/getAndAdd**（这些是 22 final 才加）。故 refcount `increment`/`decrement`（getAndAddInt）与 `getAndPutLong`（getAndSetLong）**无 FFM 等价，仍留 `sun.misc.Unsafe`** → 归 **B4** 或 **JDK 22**。含义：**21 上无法 100% 移除 sun.misc.Unsafe**，最多降到只剩这几个原子方法。
-- ⬜ **B1c**：热路径 `getLong/putLong/...` 切 segment；全量后整体复测决定是否优化 view 构造。
+- ✅ **B1c（热路径元素读写）** 2026-11-10：`linked/Uns` 的 `getLong/putLong/getInt/putInt/getShort/putShort/getByte/putByte` + 数组版 `getLongFromByteArray/...` 全改为 `MemorySegment`（静态 `ROOT=ofAddress(0).reinterpret(MAX)`，单次访问无物化）；用 `_UNALIGNED` 布局。测试 631×3 全绿。
+  - **对齐实验**：试改回对齐 `JAVA_LONG` → 所有生产测试通过，但 `linked.UnsTest` 5 个白盒用例失败（故意在奇数偏移测，依赖非对齐容忍）。为保持 `Uns` API 契约（unsafe 的非对齐语义），定案用 `_UNALIGNED`。
+  - **原子残留**：`getAndPutLong`(getAndSetLong)、`increment/decrement`(getAndAddInt) 无 21 preview FFM 等价 → 仍用 `sun.misc.Unsafe`（见 B1b 记录）。即 **B1 完成后 linked 仍保留 `sun.misc.Unsafe` 仅这几个原子**，彻底移除需 JDK 22。
+  - **粗粒度 A/B**（相邻同段，pre-B1c vs B1c）：getMulti -3.8%、getSingle -0.4%、putMulti -2.0%、putSingle -5.5%，CI 重叠；本机噪声无法确证 <3%，留稳定环境/22 精测。
+  - 构建：`--enable-native-access=ALL-UNNAMED` 加入 surefire + JMH exec（`reinterpret`/`asByteBuffer` 为受限方法）。
 - 构建侧：`--enable-preview` 已接入 compiler/javadoc/surefire/JMH-exec（父 pom + ohc-core + ohc-jmh）。
 
 > ⚠️ 方法论（本会话确立）：护栏**必须同会话 A/B**（临时回退→打包→测→恢复→打包→测），跨天绝对数字不可用。详见 `baseline-unsafe.md`。
@@ -577,6 +581,7 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 - 探针确认 21 preview FFM 能力面：有 `ofAddress/ofArray/reinterpret/fill/copy/asByteBuffer/asSlice/get/set(ValueLayout)`，**无 atomic/VarHandle**
 - 完成 **B1b（copy/set）**：linked+chunked `copyMemory`→`MemorySegment.copy`、`setMemory`→`fill`；测试 631×3 全绿；相邻同段 A/B vs B1a 全项 ±2%（中性）
 - 完成 **B1a-chunked**：`chunked/Uns` 整类去 `sun.misc.Unsafe`+`sun.nio.ch.DirectBuffer`（`allocate/free`→`allocateAddress(long)`/`free(long)`、`directBufferFor`→`asByteBuffer`、删 allocateInstance hack）；`OffHeapChunkedMap` memory/table 记录裸地址；改 2 个 chunked 测试。测试 631×3 全绿。**生产代码 `sun.nio.ch` 清零**（仅测试侧保留 DirectBuffer 取址）
+- 完成 **B1c（热路径元素读写）**：`linked/Uns` 元素 get/put + 数组版全切 `MemorySegment`，用静态 ROOT segment（`ofAddress(0).reinterpret(MAX)`，单次访问无物化）+ `_UNALIGNED` 布局。测试 631×3 全绿。对齐版实验：生产测试全过但 `linked.UnsTest`（故意非对齐白盒）失败 → 定案 UNALIGNED 保 API 契约。原子 `increment/decrement/getAndPutLong` 留 `sun.misc.Unsafe`（21 无等价）。构建加 `--enable-native-access`。**B1 整体完成（仅原子残留待 22/B4）**
 - **新发现**：21 preview 无堆外原子 → refcount/CAS（increment/decrement/getAndPutLong）**留 Unsafe，无法在 21 全移除**（归 B4/22）。护栏方法论再升级：同会话跨小时也漂移，必须**背靠背配对**
 
 ---
@@ -588,7 +593,7 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 | **0.9.3** | A1–A4 + X1 + X3 | ✅ 内容完成（待 owner 决定是否 bump pom 版本 0.9.2→0.9.3 并发布） |
 | （前置） | **C1 恢复 benchmark/jmh + Unsafe 性能基线** | ✅ 完成（原属 C 系列，因"性能不掉"目标提前） |
 | 0.9.4 / 0.10.x | B3 + B4 + X2 | ⬜ |
-| **1.0.0** | B1 + B2（FFM 迁移，移除 Unsafe；**需目标 JDK 22+**，因 FFM 在 21 为 preview；以 C1 基线为护栏） | ⛔ 阻塞待定 JDK |
+| **1.0.0** | B1 ✅（元素/拷贝/冷路径全 FFM；仅 refcount/CAS 原子留 Unsafe）+ B2（Arena 分配器，待做）。FFM 在 21 为 preview，制品需 `--enable-preview` | 🟡 B1 完成，B2 待做 |
 | 1.1+ | C2 JPMS、C3 API、C4 CI | ⬜ |
 
 ---
@@ -619,3 +624,4 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 | 2026-11-08 | 完成 A4，文档对齐 Java 21 + CHANGES 0.9.3 区块 | Pu Zhao |
 | 2026-11-08 | 完成 X1，修复 TimeoutsTest flaky（放宽时序 + 确定性 get 超时）；0.9.3 阶段内容齐备 | Pu Zhao |
 | 2026-11-08 | 前置完成 C1：恢复 ohc-jmh/ohc-benchmark + 采集 Unsafe 性能基线（B1 护栏） | Pu Zhao |
+| 2026-11-10 | 完成 B1a-chunked + B1b + B1c：B1 主体迁移完成（元素/拷贝/冷路径全 FFM，仅原子留 Unsafe） | Pu Zhao |

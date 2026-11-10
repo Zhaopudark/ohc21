@@ -17,6 +17,7 @@ package org.caffinitas.ohc.linked;
 
 import java.io.IOException;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -39,6 +40,13 @@ final class Uns
 
     private static final Unsafe unsafe;
     private static final IAllocator allocator;
+
+    // B1c: single address-space-wide segment used for all off-heap element access (GLOBAL scope,
+    // created once at class init so MemorySegment::reinterpret is not called per access).
+    // Unaligned layouts keep the byte-order/unaligned semantics that sun.misc.Unsafe provided.
+    // sun.misc.Unsafe is retained ONLY for the atomic ops (getAndSetLong/getAndAddInt) which have
+    // no FFM equivalent on JDK 21 (they arrive in JDK 22 final FFM).
+    private static final MemorySegment ROOT = MemorySegment.ofAddress(0L).reinterpret(Long.MAX_VALUE);
 
     private static final boolean __DEBUG_OFF_HEAP_MEMORY_ACCESS = Boolean.parseBoolean(System.getProperty(OHCacheBuilder.SYSTEM_PROPERTY_PREFIX + "debugOffHeapAccess", "false"));
     private static final String __ALLOCATOR = System.getProperty(OHCacheBuilder.SYSTEM_PROPERTY_PREFIX + "allocator");
@@ -177,21 +185,21 @@ final class Uns
     {
         if (offset < 0 || offset + 8 > array.length)
             throw new ArrayIndexOutOfBoundsException();
-        return unsafe.getLong(array, (long) Unsafe.ARRAY_BYTE_BASE_OFFSET + offset);
+        return MemorySegment.ofArray(array).get(ValueLayout.JAVA_LONG_UNALIGNED, offset);
     }
 
     static int getIntFromByteArray(byte[] array, int offset)
     {
         if (offset < 0 || offset + 4 > array.length)
             throw new ArrayIndexOutOfBoundsException();
-        return unsafe.getInt(array, (long) Unsafe.ARRAY_BYTE_BASE_OFFSET + offset);
+        return MemorySegment.ofArray(array).get(ValueLayout.JAVA_INT_UNALIGNED, offset);
     }
 
     static short getShortFromByteArray(byte[] array, int offset)
     {
         if (offset < 0 || offset + 2 > array.length)
             throw new ArrayIndexOutOfBoundsException();
-        return unsafe.getShort(array, (long) Unsafe.ARRAY_BYTE_BASE_OFFSET + offset);
+        return MemorySegment.ofArray(array).get(ValueLayout.JAVA_SHORT_UNALIGNED, offset);
     }
 
     static long getAndPutLong(long address, long offset, long value)
@@ -204,49 +212,49 @@ final class Uns
     static void putLong(long address, long offset, long value)
     {
         validate(address, offset, 8L);
-        unsafe.putLong(null, address + offset, value);
+        ROOT.set(ValueLayout.JAVA_LONG_UNALIGNED, address + offset, value);
     }
 
     static long getLong(long address, long offset)
     {
         validate(address, offset, 8L);
-        return unsafe.getLong(null, address + offset);
+        return ROOT.get(ValueLayout.JAVA_LONG_UNALIGNED, address + offset);
     }
 
     static void putInt(long address, long offset, int value)
     {
         validate(address, offset, 4L);
-        unsafe.putInt(null, address + offset, value);
+        ROOT.set(ValueLayout.JAVA_INT_UNALIGNED, address + offset, value);
     }
 
     static int getInt(long address, long offset)
     {
         validate(address, offset, 4L);
-        return unsafe.getInt(null, address + offset);
+        return ROOT.get(ValueLayout.JAVA_INT_UNALIGNED, address + offset);
     }
 
     static void putShort(long address, long offset, short value)
     {
         validate(address, offset, 2L);
-        unsafe.putShort(null, address + offset, value);
+        ROOT.set(ValueLayout.JAVA_SHORT_UNALIGNED, address + offset, value);
     }
 
     static short getShort(long address, long offset)
     {
         validate(address, offset, 2L);
-        return unsafe.getShort(null, address + offset);
+        return ROOT.get(ValueLayout.JAVA_SHORT_UNALIGNED, address + offset);
     }
 
     static void putByte(long address, long offset, byte value)
     {
         validate(address, offset, 1L);
-        unsafe.putByte(null, address + offset, value);
+        ROOT.set(ValueLayout.JAVA_BYTE, address + offset, value);
     }
 
     static byte getByte(long address, long offset)
     {
         validate(address, offset, 1L);
-        return unsafe.getByte(null, address + offset);
+        return ROOT.get(ValueLayout.JAVA_BYTE, address + offset);
     }
 
     static boolean decrement(long address, long offset)

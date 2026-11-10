@@ -207,6 +207,8 @@
                                     <executable>java</executable>
                                     <arguments>
                                         <argument>--enable-preview</argument>
+                                        <argument>--enable-native-access</argument>
+                                        <argument>ALL-UNNAMED</argument>
                                         <argument>--add-exports</argument>
                                         <argument>java.base/sun.nio.ch=ALL-UNNAMED</argument>
                                         <argument>-classpath</argument>
