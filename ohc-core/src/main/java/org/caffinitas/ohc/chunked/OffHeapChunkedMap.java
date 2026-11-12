@@ -268,6 +268,15 @@ final class OffHeapChunkedMap
         boolean wasFirst = lock(); 
         try
         {
+            // SECURITY (CWE-787): a single chunk's data area is `chunkDataSize` bytes; every entry
+            // must fit entirely inside one chunk (entries are written contiguously and whole chunks
+            // are evicted). If `entryBytes` exceeds that, the copyMemory write below cannot fit and
+            // would write past the chunk - and past the end of the off-heap segment allocation for
+            // the last chunk - corrupting memory and crashing the JVM. Reject such oversized entries
+            // instead (mirrors how the linked impl refuses entries above maxEntrySize).
+            if (entryBytes > chunkDataSize)
+                return false;
+
             int hashEntryOffset;
             int prevEntryOffset = 0;
             for (hashEntryOffset = table.getFirst(hash);

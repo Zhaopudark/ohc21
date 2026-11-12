@@ -58,6 +58,7 @@
 
 | ID | 标题 | 状态 | 依赖 |
 |---|---|---|---|
+| S1 | 修复 chunked `putEntry` 堆外越界写（JVM 崩溃） | ✅ 完成 | — |
 | X1 | 修复 `TimeoutsTest.testGetWithLoader` flaky | ✅ 完成 | — |
 | X2 | 清理 `finalize()` deprecated 警告 | ⬜ 未开始 | — |
 | X3 | 去除 lz4 依赖（处理 xxHash） | ✅ 完成 | — |
@@ -461,6 +462,38 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 
 **依赖**：A4
 
+### S1 — 修复 chunked `putEntry` 堆外越界写（JVM 崩溃） ✅
+
+> 安全项。NVDB（工信部国家漏洞库）收录、可能未公开披露：**OHC chunked 缓存 `OffHeapChunkedMap.putEntry` 堆外越界导致 JVM 崩溃**。
+
+**背景与动机 / 根因（CWE-787 Out-of-bounds Write）**：chunked 实现把整个段的内存一次性分配为 `allocSize = chunkCount * chunkFullSize`（`chunkFullSize = CHUNK_OFF_DATA(16) + chunkSize`）。每个 entry 必须写进**单个 chunk 的数据区（容量 `chunkDataSize` = chunkSize）**。但 `putEntry` 的"写入新 entry"分支（`Uns.copyMemory(newHashEntry.array(), position, memoryAddress, hashEntryOffset, entryBytes - position)`）只在 `writeChunkFree < entryBytes` 时**轮转 chunk**，**从不校验 `entryBytes ≤ chunkDataSize`**。当某条 entry 序列化后大小超过 chunk 数据区：
+- 轮转到全新 chunk 后 `writeChunkFree` 仍 `< entryBytes`，写入越过该 chunk 边界；
+- 若该 chunk 恰为**最后一个**，写入越过整段 `allocSize` 边界 → **堆外 OOB 写 → JVM 崩溃**（内存破坏，非异常）。
+- 变量大小路径虽有 `maxEntrySize` 校验，但默认 0（关闭）；**固定大小路径 (`putInternalFixed`) 完全没有 maxEntrySize 校验**。两者都可触发。
+
+**修复方案（按 B1c 批准的 A 式护栏策略：最小、正确、有回归测试）**：在 `putEntry` 写入路径前加**不变量校验**——`entryBytes > chunkDataSize` 的 entry 无法容纳于任一 chunk，直接返回 false（拒绝写入），而非越界写。与 linked 实现 `maxEntrySize` 拒绝过大 entry 的行为一致。
+
+**验收标准**：
+1. `mvn test -pl ohc-core`：3 execution 测试数不减少（≥ 1893）。
+2. 新增回归测试 `ChunkedOversizedEntryTest`：chunkSize 设小，put 一个 entryBytes > chunkSize 的 entry → `assertFalse(cache.put(...))`，随后正常 entry 仍可 put/get，进程不崩溃。
+3. 修复前后对照：移除该 guard 时该测试应触发崩溃/失败（证明测试有效）。
+
+**范围**：仅 `chunked/OffHeapChunkedMap.java` 加不变量 guard + 新增测试。不改内存布局、不改公开 API。
+
+**不做**：不在 `OHCacheChunkedImpl` 各处重复校验（`putEntry` 是写入收敛点，单点 guard 足够且覆盖 fixed/variable 两路）。
+
+**风险**：极低。返回 false 与既有"put 失败"语义一致。
+
+**依赖**：无
+
+**实现笔记**：
+- 改动文件：`chunked/OffHeapChunkedMap.java`（putEntry 顶部加 `if (entryBytes > chunkDataSize) return false;` + SECURITY 注释）、新增测试 `chunked/ChunkedOversizedEntryTest.java`
+- 单点 guard 覆盖 fixed + variable 两条 put 路径（都汇聚到 putEntry），无需改 OHCacheChunkedImpl
+- **B1b 后 copyMemory 走 `MemorySegment.ofAddress().reinterpret(entryBytes)`**：dst 视图被 reinterpret 成 entryBytes 大小，FFM 不做分配边界检查 → 越界写更隐蔽（不会像旧 ByteBuffer limit 那样抛异常，而是直接破坏堆外内存）。所以本 guard 是唯一有效防线
+- 验证：带 guard `mvn clean test` 633×3 全绿（1899，+2 新用例）；临时禁用 guard 后两个用例均 `expected [false] but found [true]`（证明 oversized entry 确被越界写入）→ 回归测试有效
+- 行为变更：chunked 现在对 `entryBytes > chunkSize` 的 put 返回 false（与"chunked 实验性、entry 需 ≤ chunk"约束一致）；此前是静默越界写/崩溃
+- 关联：这是 NVDB（工信部国家漏洞库）收录、可能未公开披露的 OHC chunked `OffHeapChunkedMap.putEntry` 堆外越界 JVM 崩溃漏洞的修复
+
 ---
 
 ### X1 — 修复 `TimeoutsTest.testGetWithLoader` flaky ✅
@@ -582,6 +615,10 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 - 完成 **B1b（copy/set）**：linked+chunked `copyMemory`→`MemorySegment.copy`、`setMemory`→`fill`；测试 631×3 全绿；相邻同段 A/B vs B1a 全项 ±2%（中性）
 - 完成 **B1a-chunked**：`chunked/Uns` 整类去 `sun.misc.Unsafe`+`sun.nio.ch.DirectBuffer`（`allocate/free`→`allocateAddress(long)`/`free(long)`、`directBufferFor`→`asByteBuffer`、删 allocateInstance hack）；`OffHeapChunkedMap` memory/table 记录裸地址；改 2 个 chunked 测试。测试 631×3 全绿。**生产代码 `sun.nio.ch` 清零**（仅测试侧保留 DirectBuffer 取址）
 - 完成 **B1c（热路径元素读写）**：`linked/Uns` 元素 get/put + 数组版全切 `MemorySegment`，用静态 ROOT segment（`ofAddress(0).reinterpret(MAX)`，单次访问无物化）+ `_UNALIGNED` 布局。测试 631×3 全绿。对齐版实验：生产测试全过但 `linked.UnsTest`（故意非对齐白盒）失败 → 定案 UNALIGNED 保 API 契约。原子 `increment/decrement/getAndPutLong` 留 `sun.misc.Unsafe`（21 无等价）。构建加 `--enable-native-access`。**B1 整体完成（仅原子残留待 22/B4）**
+
+### 2026-11-13
+- 完成 **S1（安全修复）**：`OffHeapChunkedMap.putEntry` 加不变量 guard 拒绝 `entryBytes > chunkDataSize` 的 entry，修复 NVDB 收录的 **chunked 堆外越界写致 JVM 崩溃（CWE-787）**。新增回归测试 `ChunkedOversizedEntryTest`（2 用例，禁用 guard 时复现 `true`/越界，启用时 `false`）。`mvn clean test` 633×3 全绿（1899）
+- 战略结论记录：用户核心目标=修复该 NVDB 漏洞（最低目标）；"21 上无痛彻底去 Unsafe + 性能不掉" 因 FFM preview/原子缺失无法三全，B 系列价值重定位为"安全修复 + 现代化预研"
 - **新发现**：21 preview 无堆外原子 → refcount/CAS（increment/decrement/getAndPutLong）**留 Unsafe，无法在 21 全移除**（归 B4/22）。护栏方法论再升级：同会话跨小时也漂移，必须**背靠背配对**
 
 ---
@@ -625,3 +662,4 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 | 2026-11-08 | 完成 X1，修复 TimeoutsTest flaky（放宽时序 + 确定性 get 超时）；0.9.3 阶段内容齐备 | Pu Zhao |
 | 2026-11-08 | 前置完成 C1：恢复 ohc-jmh/ohc-benchmark + 采集 Unsafe 性能基线（B1 护栏） | Pu Zhao |
 | 2026-11-10 | 完成 B1a-chunked + B1b + B1c：B1 主体迁移完成（元素/拷贝/冷路径全 FFM，仅原子留 Unsafe） | Pu Zhao |
+| 2026-11-13 | 完成 S1：修复 chunked putEntry 堆外越界写（NVDB 收录，CWE-787）+ 回归测试 | Pu Zhao |
