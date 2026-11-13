@@ -620,6 +620,12 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 - 完成 **S1（安全修复）**：`OffHeapChunkedMap.putEntry` 加不变量 guard 拒绝 `entryBytes > chunkDataSize` 的 entry，修复 NVDB 收录的 **chunked 堆外越界写致 JVM 崩溃（CWE-787）**。新增回归测试 `ChunkedOversizedEntryTest`（2 用例，禁用 guard 时复现 `true`/越界，启用时 `false`）。`mvn clean test` 633×3 全绿（1899）
 - 战略结论记录：用户核心目标=修复该 NVDB 漏洞（最低目标）；"21 上无痛彻底去 Unsafe + 性能不掉" 因 FFM preview/原子缺失无法三全，B 系列价值重定位为"安全修复 + 现代化预研"
 - **新发现**：21 preview 无堆外原子 → refcount/CAS（increment/decrement/getAndPutLong）**留 Unsafe，无法在 21 全移除**（归 B4/22）。护栏方法论再升级：同会话跨小时也漂移，必须**背靠背配对**
+- S1 另落纯净可发布分支 `fix/s1-oob`（基于 master，1 提交 5901c76：guard + 回归测试；master 代码库 Java 8 目标实测 2/2×3 通过，与 preview 无关）
+
+### 2026-11-14
+- **战略定调（owner）**：一不做二不休——**把整个 FFM 计划 `feature/b1-ffm` 合入 master**，接受 master 变为 `--enable-preview` 制品（锁 JDK 21、消费方需 preview、不可常规发 Central；正解的干净无-preview 版仍指向 JDK 22）
+- **前置检查（owner 要求）**：务必在 SDD 文档补记这次安全修复 → 核对：roadmap ✅、change-inventory ✅ 已含 S1；**CHANGES.txt 原缺** → 已补 `Security` 小节（CWE-787 根因/修复/行为变更/NVDB 关联/回归测试）+ `JDK 21 off-heap access (FFM, phase B)` 小节（如实写 preview 约束 + 原子残留）+ 依赖升级缓解的 Guava/Log4j2 公告
+- 合并方式：master ← feature/b1-ffm，用 `--no-ff` 保留可追溯合并提交（便于引用安全修复）
 
 ---
 
@@ -663,3 +669,4 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 | 2026-11-08 | 前置完成 C1：恢复 ohc-jmh/ohc-benchmark + 采集 Unsafe 性能基线（B1 护栏） | Pu Zhao |
 | 2026-11-10 | 完成 B1a-chunked + B1b + B1c：B1 主体迁移完成（元素/拷贝/冷路径全 FFM，仅原子留 Unsafe） | Pu Zhao |
 | 2026-11-13 | 完成 S1：修复 chunked putEntry 堆外越界写（NVDB 收录，CWE-787）+ 回归测试 | Pu Zhao |
+| 2026-11-14 | 战略定调：FFM 计划合入 master（接受 preview）；CHANGES.txt 补 Security + FFM/preview 小节 | Pu Zhao |

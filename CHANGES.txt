@@ -1,6 +1,7 @@
 0.9.3 (unreleased)
 ==================
-JDK 21 migration - phase A (engineering baseline) plus dependency cleanup.
+JDK 21 migration - phase A (engineering baseline), phase B (off-heap access moved to
+java.lang.foreign under --enable-preview), plus a security fix and dependency cleanup.
 
 Build / platform:
 - Compile target raised from Java 8 to Java 21 (source/target = 21).
@@ -26,6 +27,38 @@ Dependencies:
 - snappy-java 1.1.8.4 -> 1.1.10.12.
 - lz4: migrated from abandoned `net.jpountz.lz4:lz4:1.3.0` to `at.yawk.lz4:lz4-java:1.13.0`
   (package name `net.jpountz.xxhash` preserved, no source changes needed).
+
+JDK 21 off-heap access (FFM, phase B) - requires --enable-preview:
+- `sun.misc.Unsafe` direct-memory access and the `sun.nio.ch.DirectBuffer` /
+  `Unsafe.allocateInstance` fabricated-DirectByteBuffer hacks are replaced by the Foreign
+  Function & Memory API: element read/write via `MemorySegment` (`ValueLayout.*_UNALIGNED`),
+  bulk copies via `MemorySegment.copy`, zero-fill via `MemorySegment.fill`, and off-heap
+  ByteBuffer views via `MemorySegment.asByteBuffer` (B1a/B1b/B1c).
+- The `java.lang.foreign` API is a *preview* feature in JDK 21 (JEP 442; finalized only in
+  JDK 22 / JEP 454). Compiling and running therefore require `--enable-preview`
+  (and `--enable-native-access=ALL-UNNAMED` to silence restricted-method warnings). The
+  resulting bytecode is locked to the JDK 21 feature release and is not normally publishable
+  to Maven Central; a clean, preview-free, fully Unsafe-free build targets JDK 22+.
+- Remaining `sun.misc.Unsafe` usage: the off-heap atomics used for entry reference counting
+  and the sentinel CAS (`getAndAddInt`/`getAndSetLong`), which have no FFM equivalent in the
+  JDK 21 preview API (they arrive in JDK 22).
+
+Security:
+- Fixed a chunked-implementation off-heap out-of-bounds write (CWE-787) in
+  `org.caffinitas.ohc.chunked.OffHeapChunkedMap.putEntry`: an entry whose serialized size
+  exceeds a single chunk's data area was copied past the chunk and, for the last chunk, past
+  the end of the segment's off-heap allocation, corrupting memory and crashing the JVM.
+  `putEntry` now refuses such oversized entries (`put` returns false), mirroring the linked
+  implementation's "refuse entries above maxEntrySize" behavior. Reported against this
+  project via the MIIT National Vulnerability DB (NVDB/CNVDB); may not be publicly disclosed
+  yet. Source analysis indicates the missing bound existed in the chunked path throughout the
+  0.x history (not re-verified release-by-release).
+- Added regression test `ChunkedOversizedEntryTest` (oversized entries are refused without
+  crashing).
+- Behavior change: on the chunked implementation, `put`/`addOrReplace`/`putIfAbsent` of an
+  entry larger than one chunk now return false instead of risking memory corruption.
+- Dependency bumps above also address published advisories: Guava 33.8.0 (deserialization
+  uncontrolled-allocation, CVE-2026-102554 / GHSA-xxph-c9ww-hj94) and Log4j2 2.26.1.
 
 Documentation:
 - README, BUILDING updated to reflect the Java 21 requirement and current module state.

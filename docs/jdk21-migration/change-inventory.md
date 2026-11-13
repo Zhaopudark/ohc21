@@ -13,6 +13,8 @@
 
 **关键结论**：S1（漏洞修复）不依赖任何迁移工作，已在 `fix/s1-oob` 作为纯净可发布补丁独立成立。`feature/b1-ffm` 里**除 B1（FFM/preview）外**的文档、pom、依赖、测试类修复，都可单独并入 master。
 
+> **⚠️ 决策更新（2026-11-14，owner）**：定调整个 FFM 计划 `feature/b1-ffm` **合入 master**（不再只挑可发布子集）。即接受 master 变为 `--enable-preview` 制品。原"落地建议（只并可发布子集）"作废。安全修复已在 SDD 三处记录：`jdk21-migration.md`、`change-inventory.md`、**`CHANGES.txt` 的 Security 小节**。
+
 ---
 
 ## 一、文档类（全部可发布，无 preview 依赖）
