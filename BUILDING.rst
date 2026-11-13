@@ -17,12 +17,16 @@ The current implementation still depends on ``sun.misc.Unsafe`` and the non-expo
 - at test/runtime it is configured via the ``surefire.jvmargs`` property
   (``--add-exports java.base/sun.nio.ch=ALL-UNNAMED``)
 
-These will be removed once the code migrates to ``java.lang.foreign.MemorySegment``
-(see ``docs/jdk21-migration/jdk21-migration.md`` task B1).
+These ``--add-exports`` are needed because the off-heap implementation still uses
+``sun.nio.ch.DirectBuffer``. Removing them requires migrating to ``java.lang.foreign.MemorySegment``
+(FFM), which is only a *preview* feature in JDK 21 (JEP 442; finalized in JDK 22 / JEP 454). That
+migration is prototyped on branch ``feature/b1-ffm`` and deferred to JDK 22 (see
+``docs/jdk21-migration/jdk21-migration.md``); it is **not** part of this build.
 
-Note: the ``ohc-benchmark`` and ``ohc-jmh`` modules are currently disabled in the parent ``pom.xml``;
-``mvn install`` builds ``ohc-core`` only. They will be re-enabled after the ``java.lang.foreign`` migration
-(task C1).
+The ``ohc-benchmark`` and ``ohc-jmh`` modules are enabled in the reactor (restored in task C1).
+To build without running the JMH microbenchmarks during ``install``::
+
+    mvn clean install -DskipJmh
 
 Unit tests run against three surefire executions (jna allocator + debug, unsafe allocator + debug,
 and a production-like jna run without debug).

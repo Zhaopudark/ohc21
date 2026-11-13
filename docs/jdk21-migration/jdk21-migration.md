@@ -40,7 +40,7 @@
 
 | ID | 标题 | 状态 | 依赖 |
 |---|---|---|---|
-| B1 | 用 `MemorySegment`/`Arena` 替代 `Unsafe` + `DirectBuffer` | ✅ 完成（原子残留待22/B4） | A2, A3, C1 |
+| B1 | 用 `MemorySegment`/`Arena` 替代 `Unsafe` + `DirectBuffer` | ⏸ 已回退 master（原型保留 `feature/b1-ffm`，目标 JDK 22） | A2, A3, C1 |
 | B2 | 重新设计分配器 `IAllocator`，新增 `ForeignMemoryAllocator` 为默认 | ⬜ 未开始 | B1 |
 | B3 | 去掉 Guava 依赖 | ⬜ 未开始 | A3 |
 | B4 | 并发原语现代化（`VarHandle` 替换 `Unsafe` CAS，`StampedLock` 评估） | ⬜ 未开始 | B1 |
@@ -623,9 +623,11 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 - S1 另落纯净可发布分支 `fix/s1-oob`（基于 master，1 提交 5901c76：guard + 回归测试；master 代码库 Java 8 目标实测 2/2×3 通过，与 preview 无关）
 
 ### 2026-11-14
-- **战略定调（owner）**：一不做二不休——**把整个 FFM 计划 `feature/b1-ffm` 合入 master**，接受 master 变为 `--enable-preview` 制品（锁 JDK 21、消费方需 preview、不可常规发 Central；正解的干净无-preview 版仍指向 JDK 22）
-- **前置检查（owner 要求）**：务必在 SDD 文档补记这次安全修复 → 核对：roadmap ✅、change-inventory ✅ 已含 S1；**CHANGES.txt 原缺** → 已补 `Security` 小节（CWE-787 根因/修复/行为变更/NVDB 关联/回归测试）+ `JDK 21 off-heap access (FFM, phase B)` 小节（如实写 preview 约束 + 原子残留）+ 依赖升级缓解的 Guava/Log4j2 公告
-- 合并方式：master ← feature/b1-ffm，用 `--no-ff` 保留可追溯合并提交（便于引用安全修复）
+- **战略定调（owner，最终）**：目标是发 Central。preview 制品不可发布 → **把 B1（FFM/preview）从 master 回退**，master 回到**可发布**状态（A1–A4 + X1 + X3 + C1 + S1，无 `--enable-preview`，仍用 `sun.misc.Unsafe`）。FFM 原型完整保留在 `feature/b1-ffm`；干净无-preview、彻底去 Unsafe 的版本目标 **JDK 22**
+- 回退做法：`linked/Uns.java`/`chunked/Uns.java`/`chunked/OffHeapChunkedMap.java`/`chunked/UnsTest.java`/`chunked/HasherTest.java` 回原始 Unsafe 实现（重新施加 A2），**保留 S1 guard**；剥离父/ohc-core/ohc-jmh pom 的 `--enable-preview`/`--enable-native-access`（保留 `--add-exports`）
+- **前置检查（owner 要求）**：SDD 文档务必补记安全修复 → roadmap ✅、change-inventory ✅、**CHANGES.txt 补 `Security` 小节**（CWE-787）
+- 验证：master 无 preview `mvn clean install -DskipJmh` 4 模块 SUCCESS、`mvn clean test` 633×3 全绿（S1+X1 在内）→ 达"可发 Central"状态
+- 文档同步：CHANGES/BUILDING/README/AGENTS 由"preview/phase B 当前"改为"master 无 preview 可发布、FFM 推迟 JDK22"；本 roadmap + inventory 同步该回退
 
 ---
 
@@ -633,10 +635,9 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 
 | 版本 | 内容 | 状态 |
 |---|---|---|
-| **0.9.3** | A1–A4 + X1 + X3 | ✅ 内容完成（待 owner 决定是否 bump pom 版本 0.9.2→0.9.3 并发布） |
-| （前置） | **C1 恢复 benchmark/jmh + Unsafe 性能基线** | ✅ 完成（原属 C 系列，因"性能不掉"目标提前） |
+| **0.9.3** | A1–A4 + X1 + X3 + C1 + **S1 安全修复**（无 preview，可发 Central） | ✅ 内容完成，待 owner bump pom 0.9.2→0.9.3 并发布 |
 | 0.9.4 / 0.10.x | B3 + B4 + X2 | ⬜ |
-| **1.0.0** | B1 ✅（元素/拷贝/冷路径全 FFM；仅 refcount/CAS 原子留 Unsafe）+ B2（Arena 分配器，待做）。FFM 在 21 为 preview，制品需 `--enable-preview` | 🟡 B1 完成，B2 待做 |
+| **1.0.0（JDK 22）** | B1（FFM，元素/拷贝/冷路径 **且原子** 全去 Unsafe）+ B2（Arena 分配器）+ 去 preview。B1 原型现在 `feature/b1-ffm`（21 preview），**已从 master 回退**，转正到 JDK 22 | ⬜ 依赖 JDK 22 |
 | 1.1+ | C2 JPMS、C3 API、C4 CI | ⬜ |
 
 ---
@@ -645,11 +646,12 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 
 | 项 | 说明 | 归属 |
 |---|---|---|
-| `sun.nio.ch.DirectBuffer` 依赖 | chunked 实现使用，需 `--add-exports` | B1 移除 |
-| FFM 在 JDK 21 是 preview | JEP 442=third preview，JEP 454(22)=final；B1 无法在 21 非-preview 落地 | ⛔ B1 阻塞，待 owner 定目标 JDK |
-| `sun.misc.Unsafe` 依赖 | linked + chunked 实现，编译产生 deprecation 警告 | B1 移除 |
-| `--release` 与 `--add-exports` 互斥 | 当前用 `<source>/<target>` 替代 | B1 后切回 `<release>` |
+| `sun.nio.ch.DirectBuffer` 依赖 | chunked 实现使用，需 `--add-exports` | master 保留；B1（已回退 master）目标 JDK 22 去除 |
+| FFM 在 JDK 21 是 preview | JEP 442=third preview，JEP 454(22)=final，21 非-preview 无法落地 | ✅ 已处理：B1 从 master 回退（原型留 `feature/b1-ffm`），转正目标 JDK 22 |
+| `sun.misc.Unsafe` 依赖 | linked + chunked 实现，编译产生 deprecation 警告 | master 保留；B1（JDK 22）去除。注意原子操作即便 FFM 也需 JDK 22 |
+| `--release` 与 `--add-exports` 互斥 | master 用 `<source>/<target>21` | 维持（master 无 preview，长期可考虑 `<release>`） |
 | `TimeoutsTest` flaky | 时序敏感，与 JDK 版本无关 | X1 ✅ 已修（放宽时序） |
+| chunked `putEntry` 堆外越界 | NVDB/CWE-787，oversized entry 越界写致 JVM 崩溃 | S1 ✅ 已修（拒绝 entryBytes>chunkDataSize + 回归测试） |
 | `finalize()` deprecated | JDK 21 标记 for removal | X2 |
 | `ohc-benchmark`/`ohc-jmh` 禁用 | 父 pom 注释掉 | C1 ✅ 已恢复并采基线 |
 | benchmark 曾依赖上游 0.7.4 | `ohc-benchmark` 测的应是本 fork | C1 ✅ 已修正坐标 |
@@ -669,4 +671,4 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 | 2026-11-08 | 前置完成 C1：恢复 ohc-jmh/ohc-benchmark + 采集 Unsafe 性能基线（B1 护栏） | Pu Zhao |
 | 2026-11-10 | 完成 B1a-chunked + B1b + B1c：B1 主体迁移完成（元素/拷贝/冷路径全 FFM，仅原子留 Unsafe） | Pu Zhao |
 | 2026-11-13 | 完成 S1：修复 chunked putEntry 堆外越界写（NVDB 收录，CWE-787）+ 回归测试 | Pu Zhao |
-| 2026-11-14 | 战略定调：FFM 计划合入 master（接受 preview）；CHANGES.txt 补 Security + FFM/preview 小节 | Pu Zhao |
+| 2026-11-14 | 定调发 Central：把 B1/FFM preview 从 master 回退（master 回到可发布），FFM 留 feature 待 JDK 22；补 CHANGES 安全小节；同步文档 | Pu Zhao |

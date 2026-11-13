@@ -1,7 +1,10 @@
 0.9.3 (unreleased)
 ==================
-JDK 21 migration - phase A (engineering baseline), phase B (off-heap access moved to
-java.lang.foreign under --enable-preview), plus a security fix and dependency cleanup.
+JDK 21 migration phase A (engineering baseline) + a security fix + dependency cleanup.
+No --enable-preview; this release still uses sun.misc.Unsafe / sun.nio.ch.DirectBuffer.
+(The java.lang.foreign off-heap migration is developed on branch feature/b1-ffm under
+--enable-preview and is deferred to JDK 22, where FFM is final and preview-free; it is NOT
+part of this release.)
 
 Build / platform:
 - Compile target raised from Java 8 to Java 21 (source/target = 21).
@@ -28,20 +31,16 @@ Dependencies:
 - lz4: migrated from abandoned `net.jpountz.lz4:lz4:1.3.0` to `at.yawk.lz4:lz4-java:1.13.0`
   (package name `net.jpountz.xxhash` preserved, no source changes needed).
 
-JDK 21 off-heap access (FFM, phase B) - requires --enable-preview:
-- `sun.misc.Unsafe` direct-memory access and the `sun.nio.ch.DirectBuffer` /
-  `Unsafe.allocateInstance` fabricated-DirectByteBuffer hacks are replaced by the Foreign
-  Function & Memory API: element read/write via `MemorySegment` (`ValueLayout.*_UNALIGNED`),
-  bulk copies via `MemorySegment.copy`, zero-fill via `MemorySegment.fill`, and off-heap
-  ByteBuffer views via `MemorySegment.asByteBuffer` (B1a/B1b/B1c).
-- The `java.lang.foreign` API is a *preview* feature in JDK 21 (JEP 442; finalized only in
-  JDK 22 / JEP 454). Compiling and running therefore require `--enable-preview`
-  (and `--enable-native-access=ALL-UNNAMED` to silence restricted-method warnings). The
-  resulting bytecode is locked to the JDK 21 feature release and is not normally publishable
-  to Maven Central; a clean, preview-free, fully Unsafe-free build targets JDK 22+.
-- Remaining `sun.misc.Unsafe` usage: the off-heap atomics used for entry reference counting
-  and the sentinel CAS (`getAndAddInt`/`getAndSetLong`), which have no FFM equivalent in the
-  JDK 21 preview API (they arrive in JDK 22).
+Off-heap access status (phase B - deferred, not in this release):
+- This release still uses `sun.misc.Unsafe` and `sun.nio.ch.DirectBuffer` for off-heap memory
+  access (hence the compile/runtime `--add-exports` above and the existing `sun.misc.Unsafe`
+  deprecation warnings).
+- The migration to the Foreign Function & Memory API (`java.lang.foreign.MemorySegment`) was
+  prototyped on branch `feature/b1-ffm`. In JDK 21 FFM is a *preview* feature (JEP 442; only
+  finalized in JDK 22 / JEP 454), so that prototype needs `--enable-preview` and is not
+  publishable as a normal library. It was therefore NOT merged into this release line.
+- The clean, preview-free, fully-Unsafe-free migration (including the off-heap atomics that have
+  no JDK-21-preview FFM equivalent) targets JDK 22+.
 
 Security:
 - Fixed a chunked-implementation off-heap out-of-bounds write (CWE-787) in

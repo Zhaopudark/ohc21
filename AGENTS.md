@@ -80,19 +80,20 @@
 
 ### 系统模块访问（过渡期约束）
 
-- 代码仍依赖 `sun.nio.ch.DirectBuffer`（chunked 实现）和 `sun.misc.Unsafe`（linked + chunked 实现，B1 迁移中）。
-- 编译期与 surefire 运行期都需要 `--add-exports java.base/sun.nio.ch=ALL-UNNAMED`，已在 pom 配置好，**不要移除**，直到 chunked（B1）完成。
-- **B 方案（JDK 21 + preview）**：FFM（`java.lang.foreign`）在 21 是 preview（JEP 442；22 才 final），故 compiler/javadoc/surefire/JMH 均须带 `--enable-preview`。preview 与 `--release` 互斥 → **必须用 `<source>/<target>21`，不能用 `<release>`**（B1 完成后亦然，直到放弃 preview 即迁到 22）。
-- 后果（已知并接受）：产出的字节码锁定 JDK 21 特性版本、所有消费方需 `--enable-preview`、不可按常规库发 Maven Central。
+- 代码仍依赖 `sun.nio.ch.DirectBuffer`（chunked 实现）和 `sun.misc.Unsafe`（linked + chunked 实现）。这是 **master 当前可发布线**的状态。
+- 编译期与 surefire 运行期都需要 `--add-exports java.base/sun.nio.ch=ALL-UNNAMED`，已在 pom 配置好，**不要移除**，直到 FFM 迁移（见下）。
+- **FFM 迁移（B 系列）= 预研线，不在 master**：`java.lang.foreign` 在 JDK 21 是 preview（JEP 442；JDK 22 才 final JEP 454）。FFM 原型在分支 `feature/b1-ffm`，需 `--enable-preview`，产物锁 JDK 21 特性版本、不可常规发 Central，**故未合入 master**。干净无-preview、可发 Central 且彻底去 Unsafe 的迁移目标是 **JDK 22**。
+- 后果与边界：master 这条线用 source/target 21 + Unsafe（有 deprecation 警告），可正常发布；不要在 master 引入 `--enable-preview`。
 
 ### 已知问题与处理边界
 
 | 问题 | 归属 | 处理时机 |
 |---|---|---|
 | `TimeoutsTest.testGetWithLoader` flaky | X1 | ✅ 已修：放宽时序窗口 + 用确定性 `f.get(超时)` 替代 `f.get(0)`（时序敏感测试的通用修法） |
-| `sun.misc.Unsafe` deprecation 警告 | B1 | FFM 迁移时统一消除 |
+| `sun.misc.Unsafe` / `sun.nio.ch` 依赖 | B（FFM 迁移） | 原型在 `feature/b1-ffm`（21 preview，不可发布）；干净去除目标 JDK 22。master 仍保留 Unsafe（deprecation 警告），可发布 |
 | `finalize()` deprecated for removal 警告 | 清理项 | 后续（B4 或独立任务） |
-| `ohc-benchmark` / `ohc-jmh` 模块禁用 | C1 | B1 完成后重新启用并重跑基线 |
+| chunked `putEntry` 堆外越界（CWE-787） | S1 | ✅ 已修：`entryBytes > chunkDataSize` 拒绝（put 返回 false）+ 回归测试；master 与 feature 两线均已含 |
+| `ohc-benchmark` / `ohc-jmh` 模块 | C1 | ✅ 已恢复（取消注释 + 坐标修正 + JMH 1.37 + 采集 Unsafe 基线）；`mvn install -DskipJmh` |
 
 ### 沟通
 

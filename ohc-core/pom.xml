@@ -228,9 +228,9 @@
                 <configuration>
                     <doclint>all,-html</doclint>
                     <!-- chunked impl imports sun.nio.ch.DirectBuffer; javadoc needs the same export the
-                         compiler uses. Transitional, removed with the java.lang.foreign migration (B1). -->
+                         compiler uses. (Dropping it requires the java.lang.foreign migration, which is
+                         only preview in JDK 21 - deferred to JDK 22.) -->
                     <additionalJOptions>
-                        <additionalJOption>--enable-preview</additionalJOption>
                         <additionalJOption>--add-exports</additionalJOption>
                         <additionalJOption>java.base/sun.nio.ch=ALL-UNNAMED</additionalJOption>
                     </additionalJOptions>

@@ -28,6 +28,8 @@ Requirements
 Java 21 VM that supports 64bit. The current implementation still relies on ``sun.misc.Unsafe`` and the non-exported
 ``sun.nio.ch.DirectBuffer`` package (the latter requires ``--add-exports java.base/sun.nio.ch=ALL-UNNAMED`` at runtime).
 Support for ``sun.misc.Unsafe`` will be dropped once the code migrates to ``java.lang.foreign.MemorySegment``.
+That migration (FFM) is a preview feature in JDK 21 and finalized in JDK 22, so the Unsafe-free build is
+targeted at JDK 22+; this 0.9.x line runs on JDK 21 with ``sun.misc.Unsafe`` (no ``--enable-preview``).
 
 OHC is targeted for Linux and OSX. It *should* work on Windows and other Unix OSs.
 
@@ -201,7 +203,8 @@ You need to build OHC from source because the big benchmark artifacts are not up
 Execute ``java -jar ohc-benchmark/target/ohc-benchmark-<version>-SNAPSHOT.jar -h`` (when building from source)
 to get some help information.
 
-Note: in this ohc21 fork the ``ohc-benchmark`` module is currently disabled in the build (see ``docs/jdk21-migration/jdk21-migration.md`` task C1); it will be re-enabled after the ``java.lang.foreign`` migration.
+Note: in this ohc21 fork the ``ohc-benchmark`` and ``ohc-jmh`` modules are enabled in the build (restored in task C1).
+Build them with ``mvn clean install -DskipJmh`` to package without running the JMH suite.
 
 Generally the benchmark tool starts a bunch of threads and performs _get_ and _put_ operations concurrently
 using configurable key distributions for _get_ and _put_ operations. Value size distribution also needs to be configured.

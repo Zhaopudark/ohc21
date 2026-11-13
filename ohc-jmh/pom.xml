@@ -129,9 +129,6 @@
                 <configuration>
                     <source>21</source>
                     <target>21</target>
-                    <compilerArgs>
-                        <arg>--enable-preview</arg>
-                    </compilerArgs>
                 </configuration>
             </plugin>
 
@@ -206,9 +203,6 @@
                                     <classpathScope>test</classpathScope>
                                     <executable>java</executable>
                                     <arguments>
-                                        <argument>--enable-preview</argument>
-                                        <argument>--enable-native-access</argument>
-                                        <argument>ALL-UNNAMED</argument>
                                         <argument>--add-exports</argument>
                                         <argument>java.base/sun.nio.ch=ALL-UNNAMED</argument>
                                         <argument>-classpath</argument>

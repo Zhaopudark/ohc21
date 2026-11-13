@@ -57,8 +57,7 @@ public class HasherTest
 
         Hasher hasher = Hasher.create(hash);
         long arrayVal = hasher.hash(ByteBuffer.wrap(buf));
-        long memAddr = Uns.allocateAddress(buf.length + 99, true);
-        ByteBuffer nativeMem = Uns.directBufferFor(memAddr, buf.length + 99);
+        ByteBuffer nativeMem = Uns.allocate(buf.length + 99, true);
         try
         {
             for (int i = 0; i < 99; i++)
@@ -72,7 +71,7 @@ public class HasherTest
         }
         finally
         {
-            Uns.free(memAddr);
+            Uns.free(nativeMem);
         }
     }
 }
