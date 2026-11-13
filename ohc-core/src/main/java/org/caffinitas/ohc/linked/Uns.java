@@ -16,8 +16,9 @@
 package org.caffinitas.ohc.linked;
 
 import java.io.IOException;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.lang.reflect.Field;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
@@ -33,14 +34,19 @@ import org.caffinitas.ohc.alloc.UnsafeAllocator;
 
 import sun.misc.Unsafe;
 
-import static org.caffinitas.ohc.util.ByteBufferCompat.byteBufferPosition;
-
 final class Uns
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Uns.class);
 
     private static final Unsafe unsafe;
     private static final IAllocator allocator;
+
+    // B1c: single address-space-wide segment used for all off-heap element access (GLOBAL scope,
+    // created once at class init so MemorySegment::reinterpret is not called per access).
+    // Unaligned layouts keep the byte-order/unaligned semantics that sun.misc.Unsafe provided.
+    // sun.misc.Unsafe is retained ONLY for the atomic ops (getAndSetLong/getAndAddInt) which have
+    // no FFM equivalent on JDK 21 (they arrive in JDK 22 final FFM).
+    private static final MemorySegment ROOT = MemorySegment.ofAddress(0L).reinterpret(Long.MAX_VALUE);
 
     private static final boolean __DEBUG_OFF_HEAP_MEMORY_ACCESS = Boolean.parseBoolean(System.getProperty(OHCacheBuilder.SYSTEM_PROPERTY_PREFIX + "debugOffHeapAccess", "false"));
     private static final String __ALLOCATOR = System.getProperty(OHCacheBuilder.SYSTEM_PROPERTY_PREFIX + "allocator");
@@ -179,21 +185,21 @@ final class Uns
     {
         if (offset < 0 || offset + 8 > array.length)
             throw new ArrayIndexOutOfBoundsException();
-        return unsafe.getLong(array, (long) Unsafe.ARRAY_BYTE_BASE_OFFSET + offset);
+        return MemorySegment.ofArray(array).get(ValueLayout.JAVA_LONG_UNALIGNED, offset);
     }
 
     static int getIntFromByteArray(byte[] array, int offset)
     {
         if (offset < 0 || offset + 4 > array.length)
             throw new ArrayIndexOutOfBoundsException();
-        return unsafe.getInt(array, (long) Unsafe.ARRAY_BYTE_BASE_OFFSET + offset);
+        return MemorySegment.ofArray(array).get(ValueLayout.JAVA_INT_UNALIGNED, offset);
     }
 
     static short getShortFromByteArray(byte[] array, int offset)
     {
         if (offset < 0 || offset + 2 > array.length)
             throw new ArrayIndexOutOfBoundsException();
-        return unsafe.getShort(array, (long) Unsafe.ARRAY_BYTE_BASE_OFFSET + offset);
+        return MemorySegment.ofArray(array).get(ValueLayout.JAVA_SHORT_UNALIGNED, offset);
     }
 
     static long getAndPutLong(long address, long offset, long value)
@@ -206,49 +212,49 @@ final class Uns
     static void putLong(long address, long offset, long value)
     {
         validate(address, offset, 8L);
-        unsafe.putLong(null, address + offset, value);
+        ROOT.set(ValueLayout.JAVA_LONG_UNALIGNED, address + offset, value);
     }
 
     static long getLong(long address, long offset)
     {
         validate(address, offset, 8L);
-        return unsafe.getLong(null, address + offset);
+        return ROOT.get(ValueLayout.JAVA_LONG_UNALIGNED, address + offset);
     }
 
     static void putInt(long address, long offset, int value)
     {
         validate(address, offset, 4L);
-        unsafe.putInt(null, address + offset, value);
+        ROOT.set(ValueLayout.JAVA_INT_UNALIGNED, address + offset, value);
     }
 
     static int getInt(long address, long offset)
     {
         validate(address, offset, 4L);
-        return unsafe.getInt(null, address + offset);
+        return ROOT.get(ValueLayout.JAVA_INT_UNALIGNED, address + offset);
     }
 
     static void putShort(long address, long offset, short value)
     {
         validate(address, offset, 2L);
-        unsafe.putShort(null, address + offset, value);
+        ROOT.set(ValueLayout.JAVA_SHORT_UNALIGNED, address + offset, value);
     }
 
     static short getShort(long address, long offset)
     {
         validate(address, offset, 2L);
-        return unsafe.getShort(null, address + offset);
+        return ROOT.get(ValueLayout.JAVA_SHORT_UNALIGNED, address + offset);
     }
 
     static void putByte(long address, long offset, byte value)
     {
         validate(address, offset, 1L);
-        unsafe.putByte(null, address + offset, value);
+        ROOT.set(ValueLayout.JAVA_BYTE, address + offset, value);
     }
 
     static byte getByte(long address, long offset)
     {
         validate(address, offset, 1L);
-        return unsafe.getByte(null, address + offset);
+        return ROOT.get(ValueLayout.JAVA_BYTE, address + offset);
     }
 
     static boolean decrement(long address, long offset)
@@ -267,26 +273,29 @@ final class Uns
     static void copyMemory(byte[] arr, int off, long address, long offset, long len)
     {
         validate(address, offset, len);
-        unsafe.copyMemory(arr, Unsafe.ARRAY_BYTE_BASE_OFFSET + off, null, address + offset, len);
+        MemorySegment.copy(MemorySegment.ofArray(arr), off,
+                           MemorySegment.ofAddress(address + offset).reinterpret(len), 0L, len);
     }
 
     static void copyMemory(long address, long offset, byte[] arr, int off, long len)
     {
         validate(address, offset, len);
-        unsafe.copyMemory(null, address + offset, arr, Unsafe.ARRAY_BYTE_BASE_OFFSET + off, len);
+        MemorySegment.copy(MemorySegment.ofAddress(address + offset).reinterpret(len), 0L,
+                           MemorySegment.ofArray(arr), off, len);
     }
 
     static void copyMemory(long src, long srcOffset, long dst, long dstOffset, long len)
     {
         validate(src, srcOffset, len);
         validate(dst, dstOffset, len);
-        unsafe.copyMemory(null, src + srcOffset, null, dst + dstOffset, len);
+        MemorySegment.copy(MemorySegment.ofAddress(src + srcOffset).reinterpret(len), 0L,
+                           MemorySegment.ofAddress(dst + dstOffset).reinterpret(len), 0L, len);
     }
 
     static void setMemory(long address, long offset, long len, byte val)
     {
         validate(address, offset, len);
-        unsafe.setMemory(address + offset, len, val);
+        MemorySegment.ofAddress(address + offset).reinterpret(len).fill(val);
     }
 
     static boolean memoryCompare(long adr1, long off1, long adr2, long off2, long len)
@@ -357,61 +366,30 @@ final class Uns
         allocator.free(address);
     }
 
-    private static final Class<?> DIRECT_BYTE_BUFFER_CLASS;
-    private static final Class<?> DIRECT_BYTE_BUFFER_CLASS_R;
-    private static final long DIRECT_BYTE_BUFFER_ADDRESS_OFFSET;
-    private static final long DIRECT_BYTE_BUFFER_CAPACITY_OFFSET;
-    private static final long DIRECT_BYTE_BUFFER_LIMIT_OFFSET;
-
-    static
-    {
-        try
-        {
-            ByteBuffer directBuffer = ByteBuffer.allocateDirect(0);
-            ByteBuffer directReadOnly = directBuffer.asReadOnlyBuffer();
-            Class<?> clazz = directBuffer.getClass();
-            Class<?> clazzReadOnly = directReadOnly.getClass();
-            DIRECT_BYTE_BUFFER_ADDRESS_OFFSET = unsafe.objectFieldOffset(Buffer.class.getDeclaredField("address"));
-            DIRECT_BYTE_BUFFER_CAPACITY_OFFSET = unsafe.objectFieldOffset(Buffer.class.getDeclaredField("capacity"));
-            DIRECT_BYTE_BUFFER_LIMIT_OFFSET = unsafe.objectFieldOffset(Buffer.class.getDeclaredField("limit"));
-            DIRECT_BYTE_BUFFER_CLASS = clazz;
-            DIRECT_BYTE_BUFFER_CLASS_R = clazzReadOnly;
-        }
-        catch (NoSuchFieldException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
     static ByteBuffer directBufferFor(long address, long offset, long len, boolean readOnly)
     {
         if (len > Integer.MAX_VALUE || len < 0L)
             throw new IllegalArgumentException();
-        try
-        {
-            ByteBuffer bb = (ByteBuffer) unsafe.allocateInstance(readOnly ? DIRECT_BYTE_BUFFER_CLASS_R : DIRECT_BYTE_BUFFER_CLASS);
-            unsafe.putLong(bb, DIRECT_BYTE_BUFFER_ADDRESS_OFFSET, address + offset);
-            unsafe.putInt(bb, DIRECT_BYTE_BUFFER_CAPACITY_OFFSET, (int) len);
-            unsafe.putInt(bb, DIRECT_BYTE_BUFFER_LIMIT_OFFSET, (int) len);
-            bb.order(ByteOrder.BIG_ENDIAN);
-            return bb;
-        }
-        catch (Error e)
-        {
-            throw e;
-        }
-        catch (Throwable t)
-        {
-            throw new RuntimeException(t);
-        }
+        // FFM-backed zero-copy view over the off-heap entry region. The segment is unbounded
+        // (MemorySegment.ofAddress) reinterpreted to the requested length, giving GLOBAL scope
+        // whose lifetime is managed explicitly by the allocator - semantically equivalent to the
+        // previous fabricated DirectByteBuffer, but without sun.misc.Unsafe.allocateInstance.
+        ByteBuffer bb = MemorySegment.ofAddress(address + offset)
+                                     .reinterpret(len)
+                                     .asByteBuffer();
+        if (readOnly)
+            bb = bb.asReadOnlyBuffer();
+        bb.order(ByteOrder.BIG_ENDIAN);
+        return bb;
     }
 
     static void invalidateDirectBuffer(ByteBuffer buffer)
     {
-        byteBufferPosition(buffer, 0);
-        unsafe.putInt(buffer, DIRECT_BYTE_BUFFER_CAPACITY_OFFSET, 0);
-        unsafe.putInt(buffer, DIRECT_BYTE_BUFFER_LIMIT_OFFSET, 0);
-        unsafe.putLong(buffer, DIRECT_BYTE_BUFFER_ADDRESS_OFFSET, 0L);
+        // Make the view inert after the backing entry is dereferenced: shrinking limit to 0
+        // clamps position to 0 too, so any later get()/put() throws Buffer(Under|Over)flowException
+        // instead of touching freed memory. Uses only public ByteBuffer API (no Unsafe field poke).
+        buffer.position(0);
+        buffer.limit(0);
     }
 
     static ByteBuffer keyBufferR(long hashEntryAdr)

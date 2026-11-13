@@ -11,8 +11,8 @@ Features
 - entry eviction and expiration without a separate thread
 - capable of maintaining huge amounts of cache memory
 - suitable for tiny/small entries with low overhead using the chunked implementation
-- runs with Java 8 and Java 11 - support for Java 7 and earlier has been dropped with version 0.7.0
-- to build OHC from source, Java 11 or newer (tested with Java 11 + 15) is required
+- runs with Java 21 and newer - support for Java 20 and earlier has been dropped with this fork (ohc21)
+- to build OHC from source, Java 21 or newer is required
 
 Performance
 ===========
@@ -25,7 +25,9 @@ A very basic impression on the speed is in the _Benchmarking_ section.
 Requirements
 ============
 
-Java 8 VM that support 64bit and has ``sun.misc.Unsafe`` (Oracle JVMs on x64 Intel CPUs).
+Java 21 VM that supports 64bit. The current implementation still relies on ``sun.misc.Unsafe`` and the non-exported
+``sun.nio.ch.DirectBuffer`` package (the latter requires ``--add-exports java.base/sun.nio.ch=ALL-UNNAMED`` at runtime).
+Support for ``sun.misc.Unsafe`` will be dropped once the code migrates to ``java.lang.foreign.MemorySegment``.
 
 OHC is targeted for Linux and OSX. It *should* work on Windows and other Unix OSs.
 
@@ -185,9 +187,9 @@ Building from source
 
 Clone the git repo to your local machine. Either use the stable master branch or a release tag.
 
-``git clone https://github.com/snazy/ohc.git``
+``git clone https://github.com/Zhaopudark/ohc21.git``
 
-You need OpenJDK 11 or newer to build from source. Just execute
+You need OpenJDK 21 or newer to build from source. Just execute
 
 ``mvn clean install``
 
@@ -196,8 +198,10 @@ Benchmarking
 
 You need to build OHC from source because the big benchmark artifacts are not uploaded to Maven Central.
 
-Execute ``java -jar ohc-benchmark/target/ohc-benchmark-0.7.1-SNAPSHOT.jar -h`` (when building from source)
+Execute ``java -jar ohc-benchmark/target/ohc-benchmark-<version>-SNAPSHOT.jar -h`` (when building from source)
 to get some help information.
+
+Note: in this ohc21 fork the ``ohc-benchmark`` module is currently disabled in the build (see ``docs/jdk21-migration/jdk21-migration.md`` task C1); it will be re-enabled after the ``java.lang.foreign`` migration.
 
 Generally the benchmark tool starts a bunch of threads and performs _get_ and _put_ operations concurrently
 using configurable key distributions for _get_ and _put_ operations. Value size distribution also needs to be configured.
@@ -241,7 +245,7 @@ Distributions for read keys, write keys and value sizes can be configured using 
 
 Quick example with a read/write ratio of ``.9``, approx 1.5GB max capacity, 16 threads that runs for 30 seconds::
 
- java -jar ohc-benchmark/target/ohc-benchmark-0.5.1-SNAPSHOT.jar
+ java -jar ohc-benchmark/target/ohc-benchmark-<version>-SNAPSHOT.jar
 
 
 (Note that the version in the jar file name might differ.)

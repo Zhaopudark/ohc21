@@ -23,7 +23,6 @@ import org.xerial.snappy.Snappy;
 
 import static org.caffinitas.ohc.linked.Util.HEADER_COMPRESSED;
 import static org.caffinitas.ohc.linked.Util.writeFully;
-import static org.caffinitas.ohc.util.ByteBufferCompat.*;
 
 final class CompressingOutputChannel implements WritableByteChannel
 {
@@ -50,9 +49,9 @@ final class CompressingOutputChannel implements WritableByteChannel
         buffer.putInt(1);
         buffer.putInt(uncompressedChunkSize);
         buffer.putInt(maxCLen);
-        byteBufferFlip(buffer);
+        buffer.flip();
         delegate.write(buffer);
-        byteBufferClear(buffer);
+        buffer.clear();
     }
 
     public void close()
@@ -78,7 +77,7 @@ final class CompressingOutputChannel implements WritableByteChannel
         int sz = src.remaining();
 
         ByteBuffer s = src.duplicate();
-        byteBufferPosition(src, src.position() + sz);
+        src.position(src.position() + sz);
 
         while (sz > 0)
         {
@@ -87,17 +86,17 @@ final class CompressingOutputChannel implements WritableByteChannel
             // TODO add output buffering ?
 
             // write a block of compressed data prefixed by an int indicating the length of the compressed buffer
-            byteBufferClear(buffer);
-            byteBufferPosition(buffer, 4);
-            byteBufferLimit(s, s.position() + chunkSize);
+            buffer.clear();
+            buffer.position(4);
+            s.limit(s.position() + chunkSize);
             int cLen = Snappy.compress(s, buffer);
             buffer.putInt(0, cLen);
 
-            byteBufferPosition(buffer, 0);
-            byteBufferLimit(buffer, 4 + cLen);
+            buffer.position(0);
+            buffer.limit(4 + cLen);
             writeFully(delegate, buffer);
 
-            byteBufferPosition(s, s.position() + chunkSize);
+            s.position(s.position() + chunkSize);
             sz -= chunkSize;
         }
 

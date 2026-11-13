@@ -68,14 +68,14 @@
     </issueManagement>
 
     <properties>
-        <jmh.version>1.26</jmh.version>
+        <jmh.version>1.37</jmh.version>
         <uberjar.name>benchmarks</uberjar.name>
     </properties>
 
     <dependencies>
 
         <dependency>
-            <groupId>org.caffinitas.ohc</groupId>
+            <groupId>io.github.zhaopudark.ohc21</groupId>
             <artifactId>ohc-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -94,8 +94,8 @@
         </dependency>
 
         <dependency>
-            <groupId>net.jpountz.lz4</groupId>
-            <artifactId>lz4</artifactId>
+            <groupId>at.yawk.lz4</groupId>
+            <artifactId>lz4-java</artifactId>
             <scope>compile</scope>
         </dependency>
 
@@ -107,7 +107,13 @@
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
+            <artifactId>log4j-api</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
             <scope>compile</scope>
         </dependency>
 
@@ -121,8 +127,11 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${version.org.apache.maven.plugins.maven-compiler-plugin}</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>21</source>
+                    <target>21</target>
+                    <compilerArgs>
+                        <arg>--enable-preview</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
 
@@ -196,8 +205,12 @@
                                 <configuration>
                                     <classpathScope>test</classpathScope>
                                     <executable>java</executable>
-                                    <commantLineArgs>${surefire.jvmargs}</commantLineArgs>
                                     <arguments>
+                                        <argument>--enable-preview</argument>
+                                        <argument>--enable-native-access</argument>
+                                        <argument>ALL-UNNAMED</argument>
+                                        <argument>--add-exports</argument>
+                                        <argument>java.base/sun.nio.ch=ALL-UNNAMED</argument>
                                         <argument>-classpath</argument>
                                         <classpath />
                                         <argument>org.openjdk.jmh.Main</argument>

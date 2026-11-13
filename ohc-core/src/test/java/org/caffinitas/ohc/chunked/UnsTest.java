@@ -24,7 +24,6 @@ import org.testng.annotations.Test;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
-import static org.caffinitas.ohc.util.ByteBufferCompat.byteBufferClear;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -63,10 +62,10 @@ public class UnsTest
     private static void fillRandom()
     {
         Random r = new Random();
-        byteBufferClear(directBuffer);
+        directBuffer.clear();
         while (directBuffer.remaining() >= 4)
             directBuffer.putInt(r.nextInt());
-        byteBufferClear(directBuffer);
+        directBuffer.clear();
     }
 
     @Test
@@ -88,8 +87,8 @@ public class UnsTest
             assertEquals(buf.capacity(), directBuffer.capacity());
         }
 
-        byteBufferClear(buf);
-        byteBufferClear(directBuffer);
+        buf.clear();
+        directBuffer.clear();
 
         while (buf.remaining() >= 8)
         {
@@ -155,8 +154,8 @@ public class UnsTest
     @Test
     public void testAllocate() throws Exception
     {
-        ByteBuffer adr = Uns.allocate(100, true);
-        assertNotNull(adr);
+        long adr = Uns.allocateAddress(100, true);
+        assertTrue(adr != 0L);
         Uns.free(adr);
     }
 
@@ -181,7 +180,7 @@ public class UnsTest
 //                Uns.free(adr);
 //        }
 
-        ByteBuffer adr = Uns.allocate(128 * 1024 * 1024, true);
+        long adr = Uns.allocateAddress(128 * 1024 * 1024, true);
         try
         {
             assertTrue(Uns.getTotalAllocated() > before);

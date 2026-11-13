@@ -24,7 +24,6 @@ import org.caffinitas.ohc.HashAlgorithm;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import static org.caffinitas.ohc.util.ByteBufferCompat.byteBufferFlip;
 import static org.testng.Assert.assertEquals;
 
 public class KeyBufferTest
@@ -43,7 +42,7 @@ public class KeyBufferTest
         buf.put((byte)(42 & 0xff));
         buf.put(ref);
         buf.put((byte)(0xf0 & 0xff));
-        byteBufferFlip(buf);
+        buf.flip();
         KeyBuffer out = new KeyBuffer(buf).finish(org.caffinitas.ohc.chunked.Hasher.create(HashAlgorithm.MURMUR3));
 
         Hasher hasher = Hashing.murmur3_128().newHasher();
@@ -62,7 +61,7 @@ public class KeyBufferTest
         buf.put((byte)(42 & 0xff));
         buf.put(ref);
         buf.put((byte)(0xf0 & 0xff));
-        byteBufferFlip(buf);
+        buf.flip();
         KeyBuffer out = new KeyBuffer(buf).finish(org.caffinitas.ohc.chunked.Hasher.create(HashAlgorithm.MURMUR3));
 
         Hasher hasher = Hashing.murmur3_128().newHasher();
@@ -83,7 +82,7 @@ public class KeyBufferTest
                 byte[] ref = TestUtils.randomBytes(i);
                 ByteBuffer buf = ByteBuffer.allocate(i);
                 buf.put(ref);
-                byteBufferFlip(buf);
+                buf.flip();
                 KeyBuffer out = new KeyBuffer(buf).finish(org.caffinitas.ohc.chunked.Hasher.create(HashAlgorithm.MURMUR3));
 
                 Hasher hasher = Hashing.murmur3_128().newHasher();

@@ -40,8 +40,6 @@ import org.caffinitas.ohc.OHCacheBuilder;
 import org.caffinitas.ohc.OHCacheStats;
 import org.caffinitas.ohc.histo.EstimatedHistogram;
 
-import static org.caffinitas.ohc.util.ByteBufferCompat.*;
-
 public final class OHCacheChunkedImpl<K, V> implements OHCache<K, V>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(OHCacheChunkedImpl.class);
@@ -237,7 +235,7 @@ public final class OHCacheChunkedImpl<K, V> implements OHCache<K, V>
 
         ByteBuffer hashEntry = ByteBuffer.allocate(bytes);
 
-        byteBufferPosition(hashEntry, Util.entryOffData(isFixedSize()));
+        hashEntry.position(Util.entryOffData(isFixedSize()));
         keySerializer.serialize(k, hashEntry);
         fillUntil(hashEntry, Util.entryOffData(isFixedSize()) + keyLen);
         valueSerializer.serialize(v, hashEntry);
@@ -249,12 +247,12 @@ public final class OHCacheChunkedImpl<K, V> implements OHCache<K, V>
             fillUntil(hashEntry, Util.entryOffData(isFixedSize()) + keyLen + valueLen * 2);
         }
 
-        byteBufferPosition(hashEntry, Util.entryOffData(isFixedSize()));
-        byteBufferLimit(hashEntry, Util.entryOffData(isFixedSize()) + keyLen);
+        hashEntry.position(Util.entryOffData(isFixedSize()));
+        hashEntry.limit(Util.entryOffData(isFixedSize()) + keyLen);
         long hash = hasher.hash(hashEntry);
 
-        byteBufferPosition(hashEntry, 0);
-        byteBufferLimit(hashEntry, bytes);
+        hashEntry.position(0);
+        hashEntry.limit(bytes);
 
         // initialize hash entry
         initEntry(hash, keyLen, valueLen, hashEntry);
@@ -271,7 +269,7 @@ public final class OHCacheChunkedImpl<K, V> implements OHCache<K, V>
 
         ByteBuffer hashEntry = ByteBuffer.allocate(sz);
 
-        byteBufferPosition(hashEntry, Util.entryOffData(isFixedSize()));
+        hashEntry.position(Util.entryOffData(isFixedSize()));
         keySerializer.serialize(k, hashEntry);
         int keyLen = hashEntry.position() - Util.entryOffData(isFixedSize());
         valueSerializer.serialize(v, hashEntry);
@@ -292,12 +290,12 @@ public final class OHCacheChunkedImpl<K, V> implements OHCache<K, V>
         }
         int bytes = hashEntry.position();
 
-        byteBufferPosition(hashEntry, Util.entryOffData(isFixedSize()));
-        byteBufferLimit(hashEntry, Util.entryOffData(isFixedSize()) + keyLen);
+        hashEntry.position(Util.entryOffData(isFixedSize()));
+        hashEntry.limit(Util.entryOffData(isFixedSize()) + keyLen);
         long hash = hasher.hash(hashEntry);
 
-        byteBufferPosition(hashEntry, 0);
-        byteBufferLimit(hashEntry, bytes);
+        hashEntry.position(0);
+        hashEntry.limit(bytes);
 
         // initialize hash entry
         initEntry(hash, keyLen, valueLen, hashEntry);
@@ -367,7 +365,7 @@ public final class OHCacheChunkedImpl<K, V> implements OHCache<K, V>
         int sz = isFixedSize() ? fixedKeySize : keySize(o);
         ByteBuffer keyBuffer = ByteBuffer.allocate(sz);
         keySerializer.serialize(o, keyBuffer);
-        byteBufferFlip(keyBuffer);
+        keyBuffer.flip();
         return keySource(keyBuffer);
     }
 

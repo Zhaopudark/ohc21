@@ -22,8 +22,6 @@ import org.caffinitas.ohc.HashAlgorithm;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import static org.caffinitas.ohc.util.ByteBufferCompat.byteBufferPosition;
-
 public class HasherTest
 {
     @Test
@@ -59,21 +57,22 @@ public class HasherTest
 
         Hasher hasher = Hasher.create(hash);
         long arrayVal = hasher.hash(ByteBuffer.wrap(buf));
-        ByteBuffer nativeMem = Uns.allocate(buf.length + 99, true);
+        long memAddr = Uns.allocateAddress(buf.length + 99, true);
+        ByteBuffer nativeMem = Uns.directBufferFor(memAddr, buf.length + 99);
         try
         {
             for (int i = 0; i < 99; i++)
                 nativeMem.put((byte) 0);
             nativeMem.put(buf);
 
-            byteBufferPosition(nativeMem, 99);
+            nativeMem.position(99);
             long memoryVal = hasher.hash(nativeMem);
 
             Assert.assertEquals(memoryVal, arrayVal);
         }
         finally
         {
-            Uns.free(nativeMem);
+            Uns.free(memAddr);
         }
     }
 }

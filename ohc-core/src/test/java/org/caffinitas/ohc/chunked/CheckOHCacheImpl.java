@@ -38,8 +38,6 @@ import org.caffinitas.ohc.OHCacheBuilder;
 import org.caffinitas.ohc.OHCacheStats;
 import org.caffinitas.ohc.histo.EstimatedHistogram;
 
-import static org.caffinitas.ohc.util.ByteBufferCompat.byteBufferFlip;
-
 /**
  * This is a {@link OHCache} implementation used to validate functionality of
  * {@link OHCacheChunkedImpl} - this implementation is <b>not</b> for production use!
@@ -552,7 +550,7 @@ final class CheckOHCacheImpl<K, V> implements OHCache<K, V>
         ByteBuffer keyBuffer = ByteBuffer.allocate(size);
         keySerializer.serialize(o, keyBuffer);
         assert(keyBuffer.position() == keyBuffer.capacity()) && (keyBuffer.capacity() == size);
-        byteBufferFlip(keyBuffer);
+        keyBuffer.flip();
         return new KeyBuffer(keyBuffer).finish(hasher);
     }
 
