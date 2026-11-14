@@ -34,10 +34,18 @@ and a production-like jna run without debug).
 Releasing to Maven Central
 --------------------------
 
-Releasing is a local, manual Maven flow (no CI) that uploads to the Sonatype **Central Portal**
-via ``central-publishing-maven-plugin`` (``deploy`` profile). The previously bundled Atlassian
-``jgitflow`` plugin and the legacy OSSRH ``<distributionManagement>`` block have been **removed**
-in favor of a direct ``mvn deploy -Pdeploy``. Publishing **must** use the non-preview build on
-``master`` (never the ``feature/b1-ffm`` preview line). See
-``docs/jdk21-migration/release-runbook.md`` for prerequisites (GPG key, ``~/.m2/settings.xml``
-server id ``central`` token) and step-by-step commands.
+Publishing runs in **GitHub Actions** (``.github/workflows/release.yml``), triggered when a GitHub
+Release is published. It checks out the release tag, verifies the pom version matches the tag (and is
+not a ``-SNAPSHOT``), imports the GPG key, renders ``~/.m2/settings.xml`` (Central Portal token +
+gpg passphrase), and runs ``mvn -B -Pdeploy clean deploy``. The ``central-publishing-maven-plugin``
+uploads to the Sonatype **Central Portal**; with ``autoPublish=true`` a validated bundle is published
+automatically (a manual approval gate can be added via a GitHub ``production`` environment).
+
+Auth/signing facts (verified against Sonatype docs, 2026): Maven Central publishing has **no OIDC
+trusted publishing** (Portal user token only), and **GPG/PGP ``.asc`` signing is required** (Sigstore is
+an optional add-on, not a replacement). The Atlassian ``jgitflow`` plugin and the legacy OSSRH
+``<distributionManagement>`` block have been removed. Publish **only** from ``master`` (no
+``--enable-preview``); never from the preview ``feature/b1-ffm`` line.
+
+Setup and step-by-step: see ``docs/jdk21-migration/release-runbook.md`` (required GitHub Secrets, the
+``production`` environment, tag-and-release flow, and the local manual fallback).

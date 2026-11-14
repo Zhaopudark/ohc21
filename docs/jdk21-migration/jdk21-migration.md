@@ -634,6 +634,8 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 - 完成 **发布链收尾 B（版本号）**：pom 0.9.2 → **0.9.3**（根 + 3 子 pom 的 parent 引用与自身 version 共 7 处），子模块依赖用 `${project.version}` 自动跟随；`mvn validate` 通过
 - 完成 **发布链现代化 C**：从 deploy profile **移除** `external.atlassian.jgitflow-maven-plugin`（2014 停更、新环境不稳）+ 其版本属性；发布流程注释改为直连 `mvn -Pdeploy clean deploy`；`mvn -Pdeploy validate` 通过
 - 完成 **发布文档 D**：新增 `docs/jdk21-migration/release-runbook.md`（坐标/前置(GPG key `0802…`、settings.xml server id `central`)、步骤、autoPublish=false 手动 Publish、校验、常见坑、回滚、与 jgitflow/OSSRH 的差异）；BUILDING.rst 加"Releasing to Maven Central"段指向 runbook
+- 完成 **发布 CI 化**：新增 `.github/workflows/release.yml`（`on: release` 触发 + `workflow_dispatch`；JDK21 + 版本/tag 校验 + 导入 GPG + 渲染 settings.xml(central token + gpg.passphrase) + `mvn -B -Pdeploy clean deploy` + `environment: production` 审批门）。pom `autoPublish` 改 **true**
+- **核实并纠正生态事实**（Sonatype 官方）：Maven Central 发布**不支持 OIDC Trusted Publishing**（仅 Portal User Token）；**GPG 必留**，**Sigstore 仅可选附加**、不替代 PGP。据此把 runbook/BUILDING/pom 注释从"可 OIDC / 可 Sigstore 免 GPG / 无 CI 手发"更正为"GH Actions + token + GPG(必留) + Sigstore 可选"
 
 ---
 
@@ -641,7 +643,7 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 
 | 版本 | 内容 | 状态 |
 |---|---|---|
-| **0.9.3** | A1–A4 + X1 + X3 + C1 + **S1 安全修复**（无 preview，可发 Central） | ✅ 内容完成；pom 已 bump 0.9.2→0.9.3，待 push + 发布 |
+| **0.9.3** | A1–A4 + X1 + X3 + C1 + **S1 安全修复**（无 preview，可发 Central） | ✅ 内容完成；发布走 GH Actions `release` 触发（`autoPublish=true`），待 push + 打 tag 发 Release |
 | 0.9.4 / 0.10.x | B3 + B4 + X2 | ⬜ |
 | **1.0.0（JDK 22）** | B1（FFM，元素/拷贝/冷路径 **且原子** 全去 Unsafe）+ B2（Arena 分配器）+ 去 preview。B1 原型现在 `feature/b1-ffm`（21 preview），**已从 master 回退**，转正到 JDK 22 | ⬜ 依赖 JDK 22 |
 | 1.1+ | C2 JPMS、C3 API、C4 CI | ⬜ |
@@ -682,3 +684,4 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 | 2026-11-15 | 发布链收尾 B：pom 版本 bump 0.9.2→0.9.3（7 处），validate 通过 | Pu Zhao |
 | 2026-11-15 | 发布链现代化 C：deploy profile 移除 jgitflow + 流程改直连 `mvn -Pdeploy deploy` | Pu Zhao |
 | 2026-11-15 | 发布文档 D：新增 release-runbook.md + BUILDING 发布段 | Pu Zhao |
+| 2026-11-15 | 发布 CI 化 E：新增 GH Actions release.yml + autoPublish=true；核实并纠正 OIDC/Sigstore 事实入文档 | Pu Zhao |
