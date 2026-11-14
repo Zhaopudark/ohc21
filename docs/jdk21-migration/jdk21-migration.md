@@ -629,13 +629,17 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 - 验证：master 无 preview `mvn clean install -DskipJmh` 4 模块 SUCCESS、`mvn clean test` 633×3 全绿（S1+X1 在内）→ 达"可发 Central"状态
 - 文档同步：CHANGES/BUILDING/README/AGENTS 由"preview/phase B 当前"改为"master 无 preview 可发布、FFM 推迟 JDK22"；本 roadmap + inventory 同步该回退
 
+### 2026-11-15
+- 完成 **发布链收尾 A**：删除 4 个 pom（根/ohc-core/ohc-benchmark/ohc-jmh）里指向已退役 OSSRH 的 `distributionManagement`（central-publishing-maven-plugin 不使用，Sonatype 建议移除），改由注释说明；`mvn validate` 通过
+- 完成 **发布链收尾 B（版本号）**：pom 0.9.2 → **0.9.3**（根 + 3 子 pom 的 parent 引用与自身 version 共 7 处），子模块依赖用 `${project.version}` 自动跟随；`mvn validate` 通过
+
 ---
 
 ## 4. 版本路线
 
 | 版本 | 内容 | 状态 |
 |---|---|---|
-| **0.9.3** | A1–A4 + X1 + X3 + C1 + **S1 安全修复**（无 preview，可发 Central） | ✅ 内容完成，待 owner bump pom 0.9.2→0.9.3 并发布 |
+| **0.9.3** | A1–A4 + X1 + X3 + C1 + **S1 安全修复**（无 preview，可发 Central） | ✅ 内容完成；pom 已 bump 0.9.2→0.9.3，待 push + 发布 |
 | 0.9.4 / 0.10.x | B3 + B4 + X2 | ⬜ |
 | **1.0.0（JDK 22）** | B1（FFM，元素/拷贝/冷路径 **且原子** 全去 Unsafe）+ B2（Arena 分配器）+ 去 preview。B1 原型现在 `feature/b1-ffm`（21 preview），**已从 master 回退**，转正到 JDK 22 | ⬜ 依赖 JDK 22 |
 | 1.1+ | C2 JPMS、C3 API、C4 CI | ⬜ |
@@ -672,3 +676,5 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 | 2026-11-10 | 完成 B1a-chunked + B1b + B1c：B1 主体迁移完成（元素/拷贝/冷路径全 FFM，仅原子留 Unsafe） | Pu Zhao |
 | 2026-11-13 | 完成 S1：修复 chunked putEntry 堆外越界写（NVDB 收录，CWE-787）+ 回归测试 | Pu Zhao |
 | 2026-11-14 | 定调发 Central：把 B1/FFM preview 从 master 回退（master 回到可发布），FFM 留 feature 待 JDK 22；补 CHANGES 安全小节；同步文档 | Pu Zhao |
+| 2026-11-15 | 发布链收尾 A：删除 4 pom 的退役 OSSRH `distributionManagement` | Pu Zhao |
+| 2026-11-15 | 发布链收尾 B：pom 版本 bump 0.9.2→0.9.3（7 处），validate 通过 | Pu Zhao |

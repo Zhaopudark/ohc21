@@ -18,7 +18,7 @@
 
 ## 复现命令
 
-JMH uberjar：`ohc-jmh/target/ohc-jmh-0.9.2-benchmarks.jar`（由 `mvn install -DskipJmh` 产出）。
+JMH uberjar：`ohc-jmh/target/ohc-jmh-<version>-benchmarks.jar`（由 `mvn install -DskipJmh` 产出；本基线采集时版本为 0.9.2）。
 
 ```bash
 # 1. 热路径（linked / MURMUR3 / LRU）
