@@ -46,16 +46,9 @@
         </license>
     </licenses>
 
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
+    <!-- Publishing to Maven Central is handled by org.sonatype.central:central-publishing-maven-plugin
+         in the "deploy" profile (Central Portal, server id "central"). The legacy OSSRH
+         <distributionManagement> block is intentionally removed - the plugin does not use it. -->
     <scm>
         <connection>scm:git:https://github.com/Zhaopudark/ohc21.git</connection>
         <developerConnection>scm:git:https://github.com/Zhaopudark/ohc21.git</developerConnection>
