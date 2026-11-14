@@ -69,7 +69,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <version.com.google.guava>33.8.0-jre</version.com.google.guava>
-        <version.external.atlassian.jgitflow.jgitflow-maven-plugin>1.0-m5.1</version.external.atlassian.jgitflow.jgitflow-maven-plugin>
         <version.net.java.dev.jna>5.19.1</version.net.java.dev.jna>
         <version.at.yawk.lz4.lz4-java>1.13.0</version.at.yawk.lz4.lz4-java>
         <version.org.apache.felix.maven-bundle-plugin>5.1.9</version.org.apache.felix.maven-bundle-plugin>
@@ -430,20 +429,6 @@
                     </plugin>
 
                     <plugin>
-                        <groupId>external.atlassian.jgitflow</groupId>
-                        <artifactId>jgitflow-maven-plugin</artifactId>
-                        <version>${version.external.atlassian.jgitflow.jgitflow-maven-plugin}</version>
-                        <configuration>
-                            <allowSnapshots>false</allowSnapshots>
-                            <autoVersionSubmodules>true</autoVersionSubmodules>
-                            <pushReleases>false</pushReleases>
-                            <scmCommentPrefix>[GITFLOW]</scmCommentPrefix>
-                            <keepBranch>false</keepBranch>
-                            <noDeploy>false</noDeploy>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
                         <version>${version.org.apache.maven.plugins.maven-gpg-plugin}</version>
@@ -465,24 +450,16 @@
         </profile>
 
         <!--
-        Release deployment procedure:
+        Release procedure (simplified, no jgitflow):
+            Version is set manually in the poms (see docs/jdk21-migration/release-runbook.md).
 
-            Configure ~/.m2/settings.xml with a Central Portal token under server id "central".
-            mvn clean
-            mvn jgitflow:release-start -Pdeploy
-            mvn jgitflow:release-finish -Pdeploy
-            (git push required unless -DpushReleases=true)
+            1) ~/.m2/settings.xml: server id "central" with the Central Portal user token;
+               a GPG key matching the keyname below (and passphrase via settings or -Dgpg.passphrase).
+            2) mvn clean -Pdeploy
+            3) mvn deploy -Pdeploy     # central-publishing-maven-plugin uploads a bundle to the Central Portal
+            4) Publish the staged bundle at https://central.sonatype.com (autoPublish=false => manual publish)
 
-            ALTERNATIVE:
-
-            Configure ~/.m2/settings.xml with a Central Portal token under server id "central".
-            mvn clean
-            mvn jgitflow:release-start -Pdeploy
-            mvn jgitflow:release-finish -Pdeploy -DkeepBranch=true -DnoDeploy=true
-            (...)
-            mvn deploy -Pdeploy
-            (git push required unless -DpushReleases=true on release-finish)
-
+        The retired OSSRH staging plugin and the unmaintained atlassian jgitflow plugin are NOT used.
         -->
 
     </profiles>

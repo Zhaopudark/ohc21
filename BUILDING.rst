@@ -30,3 +30,14 @@ To build without running the JMH microbenchmarks during ``install``::
 
 Unit tests run against three surefire executions (jna allocator + debug, unsafe allocator + debug,
 and a production-like jna run without debug).
+
+Releasing to Maven Central
+--------------------------
+
+Releasing is a local, manual Maven flow (no CI) that uploads to the Sonatype **Central Portal**
+via ``central-publishing-maven-plugin`` (``deploy`` profile). The previously bundled Atlassian
+``jgitflow`` plugin and the legacy OSSRH ``<distributionManagement>`` block have been **removed**
+in favor of a direct ``mvn deploy -Pdeploy``. Publishing **must** use the non-preview build on
+``master`` (never the ``feature/b1-ffm`` preview line). See
+``docs/jdk21-migration/release-runbook.md`` for prerequisites (GPG key, ``~/.m2/settings.xml``
+server id ``central`` token) and step-by-step commands.

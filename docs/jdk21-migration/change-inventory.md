@@ -121,4 +121,17 @@
 - B1 全部（FFM/preview 代码 + 相关 pom flag）
 - 因 preview 不可常规发布；若要彻底去 Unsafe，正解是迁 **JDK 22**（FFM final）后作为 1.0
 
+---
+
+## 发布链收尾（已完成 2026-11-15）
+
+| 项 | 内容 | 结果 |
+|---|---|---|
+| A | 删 4 pom 的退役 OSSRH `distributionManagement` | ✅ |
+| B | 版本 bump `0.9.2`→`0.9.3`（7 处 version） | ✅ `mvn clean install -DskipJmh` SUCCESS，产物 0.9.3 |
+| C | deploy profile 移除 `jgitflow` 插件 + 版本属性；流程改直连 `mvn -Pdeploy clean deploy` | ✅ `mvn -Pdeploy validate` 通过 |
+| D | 新增 `docs/jdk21-migration/release-runbook.md`；BUILDING 加发布段 | ✅ |
+
+现状：master = 0.9.3、无 preview、无死配置、含 S1；发布走 `central-publishing-maven-plugin`（新 Central Portal），`autoPublish=false` 需发布后到 portal 手动 Publish。**仍未 push、未实际发布**（发布为 owner 操作）。
+
 > 交织点提示：父 `pom.xml`、`ohc-core/pom.xml`、`ohc-jmh/pom.xml`、`linked/Uns.java`、`chunked/OffHeapChunkedMap.java` 同时含"可发布改动"和"B1 preview 改动"。要把可发布子集干净并入 master，需要逐文件剥离 preview 部分并验证 `mvn clean test`（Java 21 目标、无 preview、无 FFM）。

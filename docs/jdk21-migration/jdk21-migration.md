@@ -632,6 +632,8 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 ### 2026-11-15
 - 完成 **发布链收尾 A**：删除 4 个 pom（根/ohc-core/ohc-benchmark/ohc-jmh）里指向已退役 OSSRH 的 `distributionManagement`（central-publishing-maven-plugin 不使用，Sonatype 建议移除），改由注释说明；`mvn validate` 通过
 - 完成 **发布链收尾 B（版本号）**：pom 0.9.2 → **0.9.3**（根 + 3 子 pom 的 parent 引用与自身 version 共 7 处），子模块依赖用 `${project.version}` 自动跟随；`mvn validate` 通过
+- 完成 **发布链现代化 C**：从 deploy profile **移除** `external.atlassian.jgitflow-maven-plugin`（2014 停更、新环境不稳）+ 其版本属性；发布流程注释改为直连 `mvn -Pdeploy clean deploy`；`mvn -Pdeploy validate` 通过
+- 完成 **发布文档 D**：新增 `docs/jdk21-migration/release-runbook.md`（坐标/前置(GPG key `0802…`、settings.xml server id `central`)、步骤、autoPublish=false 手动 Publish、校验、常见坑、回滚、与 jgitflow/OSSRH 的差异）；BUILDING.rst 加"Releasing to Maven Central"段指向 runbook
 
 ---
 
@@ -678,3 +680,5 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 | 2026-11-14 | 定调发 Central：把 B1/FFM preview 从 master 回退（master 回到可发布），FFM 留 feature 待 JDK 22；补 CHANGES 安全小节；同步文档 | Pu Zhao |
 | 2026-11-15 | 发布链收尾 A：删除 4 pom 的退役 OSSRH `distributionManagement` | Pu Zhao |
 | 2026-11-15 | 发布链收尾 B：pom 版本 bump 0.9.2→0.9.3（7 处），validate 通过 | Pu Zhao |
+| 2026-11-15 | 发布链现代化 C：deploy profile 移除 jgitflow + 流程改直连 `mvn -Pdeploy deploy` | Pu Zhao |
+| 2026-11-15 | 发布文档 D：新增 release-runbook.md + BUILDING 发布段 | Pu Zhao |
