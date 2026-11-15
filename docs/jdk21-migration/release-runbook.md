@@ -16,17 +16,19 @@
 
 ## 1. 前置条件
 1. **JDK 21+**、**Maven 3.9+**（source/target 21；无需 22，master 不用 FFM）。
-2. **GPG 私钥**：pom `deploy` profile 的 keyname = `0802D482D22790A1651BA231ADB95FF70953D71D`。口令走 settings server id **`gpg.passphrase`**（maven-gpg-plugin 默认 passphraseServerId），或 `-Dgpg.passphrase=…`。
-   - 本地预检可 `-Dgpg.skip=true` 跳过签名；正式发布必须签名。
+2. **GPG 私钥**：pom `deploy` profile 的 keyname = `0802D482D22790A1651BA231ADB95FF70953D71D`。
+   - **本项目的签名私钥无口令（passphrase-less）**——已用"杀 agent 后空口令 loopback 签名 exit=0"证实。因此 CI/发布**不需要 `GPG_PASSPHRASE`**。
+   - 复核：`gpgconf --kill gpg-agent` 后 `echo x | gpg --batch --pinentry-mode loopback --passphrase "" --local-user 0802D71D… --sign -o t - && echo ok`（能 ok 即无口令）。
+   - 本地预检可 `-Dgpg.skip=true` 跳过签名；正式发布必须签名（GPG `.asc` 是 Central 强制项）。
 3. **Central User Token**：在 https://central.sonatype.com 生成 User Token（形如 `user$tokenPass`），server id 必须为 **`central`**。
 4. 代码就绪：`mvn clean install -DskipJmh` 全模块 SUCCESS、`mvn clean test -pl ohc-core` 633×3 绿。
 
 ## 2A. 发布步骤（GitHub Actions，主路径）
 一次性配置（仓库 GitHub 设置）：
-1. **Secrets**（Settings → Secrets and variables → Actions → Repository secrets）：
-   - `MAVEN_GPG_PRIVATE_KEY`：`gpg --armor --export-secret-keys 0953D71D` 的文本
-   - `GPG_PASSPHRASE`：该私钥口令
+1. **Secrets**（Settings → Secrets and variables → Actions → Repository secrets，**共 3 个**）：
+   - `MAVEN_GPG_PRIVATE_KEY`：`gpg --armor --export-secret-keys 0802D482D22790A1651BA231ADB95FF70953D71D` 的文本
    - `CENTRAL_TOKEN_USERNAME` / `CENTRAL_TOKEN_PASSWORD`：Portal token 的 user 与 pass
+   - （私钥无口令，**不再需要 `GPG_PASSPHRASE`**）
 2. **Environment `production`**（Settings → Environments）：建同名环境，加 **Required reviewers** 作人工审批门（弥补 Maven 无 OIDC——上传前需人放行）。
 3. 触发发布：把代码合到 master → 打 tag（裸版本号，如 `0.9.3`）并 push → 在 GitHub **创建 Release**（用该 tag）→ `release: published` 触发 workflow：
    ```powershell
@@ -38,7 +40,7 @@
 
 ## 2B. 本地手动发布（兜底）
 ```powershell
-# 前提：本机有 GPG 私钥 + ~/.m2/settings.xml 配好 central 与 gpg.passphrase
+# 前提：本机有 GPG 私钥（无口令）+ ~/.m2/settings.xml 配好 server id=central
 mvn -B -Pdeploy clean deploy
 # 只发主库：mvn -B -pl ohc-core -am -Pdeploy clean deploy
 ```
@@ -56,7 +58,7 @@ mvn -B -Pdeploy clean deploy
 ## 4. 常见坑
 - **401/Unauthorized**：`settings.xml` server id 不是 `central`，或 token 过期 → 重新生成。
 - **javadoc 失败**：因 chunked `sun.nio.ch.DirectBuffer`，javadoc 已配 `--add-exports`；若仍报 preview，说明误从 `feature/b1-ffm` 线发布。
-- **gpg 挂起**：headless 环境需 `GPG_TTY` 或 `batch` 模式 + `-Dgpg.passphrase`/`pinentry-loopback`。
+- **gpg 挂起**：本项目私钥无口令，CI 用 `-Dgpg.pinentry-mode=loopback` 直接签。若将来给私钥加了口令，则需再加回 `GPG_PASSPHRASE` secret 并在 settings.xml 配 server id `gpg.passphrase`。
 - **误发 preview**：绝不可从含 `--enable-preview` 的构建发布（锁版本 + 不可常规用）。
 
 ## 5. 与历史工具的差异 / 生态事实（C 现代化 + 2026 核实）

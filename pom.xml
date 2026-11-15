@@ -455,9 +455,10 @@
             .github/workflows/release.yml, triggered by a GitHub Release being published.
 
             Required GitHub repo configuration:
-              Secrets: MAVEN_GPG_PRIVATE_KEY (armored), GPG_PASSPHRASE,
+              Secrets: MAVEN_GPG_PRIVATE_KEY (armored),
                        CENTRAL_TOKEN_USERNAME, CENTRAL_TOKEN_PASSWORD.
-              Environment "production": optional protection rule = manual approval before deploy.
+                       (The signing key is passphrase-less, so no GPG_PASSPHRASE.)
+              Environment "production": optional manual approval before deploy.
               central.sonatype.com namespace "io.github.zhaopudark.ohc21" must be owned (already, 0.9.1/0.9.2 live).
 
             What the workflow does (same as local):

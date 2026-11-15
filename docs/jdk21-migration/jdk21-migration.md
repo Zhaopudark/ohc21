@@ -636,6 +636,7 @@ C1 前置完成后，B1（FFM 迁移）现已具备"改动即测、回退即停"
 - 完成 **发布文档 D**：新增 `docs/jdk21-migration/release-runbook.md`（坐标/前置(GPG key `0802…`、settings.xml server id `central`)、步骤、autoPublish=false 手动 Publish、校验、常见坑、回滚、与 jgitflow/OSSRH 的差异）；BUILDING.rst 加"Releasing to Maven Central"段指向 runbook
 - 完成 **发布 CI 化**：新增 `.github/workflows/release.yml`（`on: release` 触发 + `workflow_dispatch`；JDK21 + 版本/tag 校验 + 导入 GPG + 渲染 settings.xml(central token + gpg.passphrase) + `mvn -B -Pdeploy clean deploy` + `environment: production` 审批门）。pom `autoPublish` 改 **true**
 - **核实并纠正生态事实**（Sonatype 官方）：Maven Central 发布**不支持 OIDC Trusted Publishing**（仅 Portal User Token）；**GPG 必留**，**Sigstore 仅可选附加**、不替代 PGP。据此把 runbook/BUILDING/pom 注释从"可 OIDC / 可 Sigstore 免 GPG / 无 CI 手发"更正为"GH Actions + token + GPG(必留) + Sigstore 可选"
+- **B 精修（私钥无口令）**：探针证实签名私钥 passphrase-less → workflow 移除 `GPG_PASSPHRASE`、settings.xml 去掉 `gpg.passphrase` server、deploy 加 `-Dgpg.pinentry-mode=loopback`；**只需 3 个 secret**。runbook/pom 注释/workflow 头注同步；`mvn -Pdeploy validate` 通过
 
 ---
 

@@ -8,6 +8,8 @@ on:
 # Maven Central publishing (verified against Sonatype docs, 2026):
 #   - auth  = Central Portal USER TOKEN (no OIDC trusted-publishing for Maven).
 #   - sign  = GPG/PGP (.asc) REQUIRED; Sigstore is optional add-on, does NOT replace GPG.
+#   - this project's GPG key is passphrase-LESS (verified) -> only 3 secrets needed:
+#       MAVEN_GPG_PRIVATE_KEY, CENTRAL_TOKEN_USERNAME, CENTRAL_TOKEN_PASSWORD.
 
 permissions:
   contents: read
@@ -48,26 +50,25 @@ jobs:
             fi
           fi
 
-      - name: Import GPG signing key
+      - name: Import GPG signing key (passphrase-less)
         shell: bash
         env:
           GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           set -euo pipefail
           printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --yes --import
           gpg --list-secret-keys --with-colons | sed -n 's/^sec:/sec:/p'
-          # non-interactive passphrase for gpg 2.x
+          # The signing key has NO passphrase (verified locally), so signing is
+          # non-interactive on the runner. allow-loopback is kept as a belt-and-suspenders.
           mkdir -p ~/.gnupg
           echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
           gpgconf --kill gpg-agent || true
 
-      - name: Render ~/.m2/settings.xml (Central token + gpg passphrase)
+      - name: Render ~/.m2/settings.xml (Central token only; no gpg passphrase)
         shell: bash
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           set -euo pipefail
           mkdir -p ~/.m2
@@ -79,13 +80,9 @@ jobs:
                 <username>${CENTRAL_USERNAME}</username>
                 <password>${CENTRAL_PASSWORD}</password>
               </server>
-              <server>
-                <id>gpg.passphrase</id>
-                <passphrase>${GPG_PASSPHRASE}</passphrase>
-              </server>
             </servers>
           </settings>
           EOF
 
       - name: Build, GPG-sign, deploy to Central (autoPublish=true)
-        run: mvn -B -ntp -Pdeploy clean deploy
+        run: mvn -B -ntp -Pdeploy -Dgpg.pinentry-mode=loopback clean deploy

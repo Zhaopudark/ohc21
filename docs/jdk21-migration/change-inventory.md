@@ -131,7 +131,7 @@
 | B | 版本 bump `0.9.2`→`0.9.3`（7 处 version） | ✅ `mvn clean install -DskipJmh` SUCCESS，产物 0.9.3 |
 | C | deploy profile 移除 `jgitflow` 插件 + 版本属性；流程改直连 `mvn -Pdeploy clean deploy` | ✅ `mvn -Pdeploy validate` 通过 |
 | D | 新增 `docs/jdk21-migration/release-runbook.md`；BUILDING 加发布段 | ✅ |
-| E | 发布 CI 化：`.github/workflows/release.yml`（`on: release` + `workflow_dispatch`）；`autoPublish` 改 true；核实 Maven 无 OIDC、GPG 必留、Sigstore 仅可选并更正全部文档 | ✅ 已建，待配 Secrets/environment + push + 发 Release 触发 |
+| E | 发布 CI 化：`.github/workflows/release.yml`（`on: release` + `workflow_dispatch`）；`autoPublish` 改 true；核实 Maven 无 OIDC、GPG 必留、Sigstore 仅可选并更正全部文档。**B 精修**：私钥无口令 → 去 `GPG_PASSPHRASE`，只 3 个 secret，deploy 加 loopback | ✅ 已建，待配 Secrets/environment + 发 Release 触发 |
 
 现状：master = 0.9.3、无 preview、无死配置、含 S1；发布走 `central-publishing-maven-plugin`（新 Central Portal），`autoPublish=false` 需发布后到 portal 手动 Publish。**仍未 push、未实际发布**（发布为 owner 操作）。
 
