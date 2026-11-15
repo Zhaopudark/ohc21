@@ -33,10 +33,11 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Invoke-Git {
-    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
-    & git @Arguments
+    # 用数组接收 git 参数，避免把 -a/-m/--xxx 误当作 PowerShell 参数名
+    param([Parameter(Mandatory = $true, Position = 0)][string[]]$ArgList)
+    & git @ArgList
     if ($LASTEXITCODE -ne 0) {
-        throw "git $($Arguments -join ' ') failed (exit=$LASTEXITCODE)"
+        throw "git $($ArgList -join ' ') failed (exit=$LASTEXITCODE)"
     }
 }
 
@@ -45,7 +46,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $repoRoot
 try {
     # 1) 必须在 git 仓库内
-    Invoke-Git rev-parse --is-inside-work-tree | Out-Null
+    Invoke-Git @('rev-parse','--is-inside-work-tree') | Out-Null
 
     # 2) 版本格式校验
     if ($Version -notmatch '^\d+\.\d+\.\d+(?:[-.][0-9A-Za-z.]+)?$') {
@@ -86,16 +87,16 @@ try {
 
     # 7) 执行（受 -WhatIf 控制）
     if ($PSCmdlet.ShouldProcess("HEAD", "create annotated tag $Version")) {
-        Invoke-Git tag -a $Version -m "Release $Version"
+        Invoke-Git @('tag','-a',$Version,'-m',"Release $Version")
         Write-Host "Created local tag: $Version" -ForegroundColor Green
     }
 
     if ($PSCmdlet.ShouldProcess("origin", "push tag $Version")) {
         if (-not $NoBranchPush) {
-            Invoke-Git push origin $branch
+            Invoke-Git @('push','origin',$branch)
             Write-Host "Pushed branch: $branch" -ForegroundColor Green
         }
-        Invoke-Git push origin "refs/tags/$Version"
+        Invoke-Git @('push','origin',"refs/tags/$Version")
         Write-Host "Pushed tag: $Version" -ForegroundColor Green
     }
 
